@@ -4,7 +4,7 @@ import com.lingmu0.JeiPlusPlusMod.client.RecipeBookmarkNavigationContext;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.IRecipeManager;
-import mezz.jei.api.recipe.transfer.IRecipeTransferManager;
+import mezz.jei.common.transfer.RecipeTransferService;
 import mezz.jei.gui.recipes.lookups.ILookupState;
 import mezz.jei.gui.recipes.lookups.IngredientLookupState;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,7 +22,7 @@ public abstract class IngredientLookupStateMixin {
         IRecipeManager recipeManager,
         IFocusGroup focusGroup,
         java.util.List<IRecipeCategory<?>> recipeCategories,
-        IRecipeTransferManager recipeTransferManager,
+        RecipeTransferService recipeTransferService,
         CallbackInfoReturnable<ILookupState> cir
     ) {
         Optional<IRecipeCategory<?>> category = RecipeBookmarkNavigationContext.category();

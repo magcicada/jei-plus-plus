@@ -8,6 +8,7 @@ import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.runtime.IJeiRuntime;
 import mezz.jei.common.Internal;
 import mezz.jei.common.input.IInternalKeyMappings;
+import mezz.jei.common.transfer.RecipeTransferService;
 import mezz.jei.gui.bookmarks.BookmarkList;
 import mezz.jei.gui.bookmarks.IBookmark;
 import mezz.jei.gui.bookmarks.RecipeBookmark;
@@ -17,6 +18,7 @@ import mezz.jei.gui.input.handlers.BookmarkInputHandler;
 import mezz.jei.gui.input.handlers.SameElementInputHandler;
 import mezz.jei.gui.recipes.IRecipeLayoutWithButtons;
 import mezz.jei.gui.recipes.RecipeGuiLayouts;
+import mezz.jei.gui.recipes.RecipeTransferButtonController;
 import mezz.jei.gui.recipes.RecipesGui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
@@ -134,7 +136,8 @@ public abstract class BookmarkInputHandlerMixin {
             return null;
         }
         ITypedIngredient<?> normalized = runtime.getIngredientManager().normalizeTypedIngredient(output.get());
-        return new RecipeBookmark(layout.getRecipeCategory(), layout.getRecipe(), recipeUid, normalized, true);
+        RecipeTransferService recipeTransferService = new RecipeTransferService(runtime.getRecipeTransferManager());
+        return new RecipeBookmark(layout.getRecipeCategory(), layout.getRecipe(), recipeUid, normalized, true,recipeTransferService);
     }
 
     /**
