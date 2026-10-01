@@ -20,12 +20,14 @@ import java.util.Set;
 /**
  * Optional Applied Energistics 2 storage lookup for recipe-tree accounting.
  *
- * <p>The integration intentionally uses reflection. JEI++ remains loadable
+ * <p>
+ * The integration intentionally uses reflection. JEI++ remains loadable
  * without AE2, and the AE2 classes are only touched while an AE2 menu is open.
  * The result is a client-side snapshot of the network's cached item inventory;
  * it is used for counts and recursive supply checks. Crafting-terminal
  * transfers and the optional AE2 grid highlight/order integration use AE2's
- * client-side objects only; no JEI++ server packet is introduced.</p>
+ * client-side objects only; no JEI++ server packet is introduced.
+ * </p>
  */
 final class Ae2StorageIntegration {
     private static final long CACHE_FALLBACK_NANOS = 50_000_000L;
@@ -34,25 +36,25 @@ final class Ae2StorageIntegration {
     private static final String CRAFTING_MENU = "appeng.menu.me.items.CraftingTermMenu";
     private static final String CRAFTING_RESULT_SLOT = "appeng.menu.slot.CraftingTermSlot";
     private static final String[] NETWORK_HANDLERS = {
-        // AE2 1.20.x
-        "appeng.core.sync.network.NetworkHandler",
-        // AE2 1.21.x
-        "appeng.core.network.NetworkHandler"
+            // AE2 1.20.x
+            "appeng.core.sync.network.NetworkHandler",
+            // AE2 1.21.x
+            "appeng.core.network.NetworkHandler"
     };
     private static final String[] FILL_PACKETS = {
-        // AE2 1.20.x
-        "appeng.core.sync.packets.FillCraftingGridFromRecipePacket",
-        // AE2 1.21.x
-        "appeng.core.network.serverbound.FillCraftingGridFromRecipePacket"
+            // AE2 1.20.x
+            "appeng.core.sync.packets.FillCraftingGridFromRecipePacket",
+            // AE2 1.21.x
+            "appeng.core.network.serverbound.FillCraftingGridFromRecipePacket"
     };
     private static final String[] INVENTORY_ACTION_PACKETS = {
-        // AE2 1.20.x
-        "appeng.core.sync.packets.InventoryActionPacket",
-        // AE2 1.21.x
-        "appeng.core.network.serverbound.InventoryActionPacket"
+            // AE2 1.20.x
+            "appeng.core.sync.packets.InventoryActionPacket",
+            // AE2 1.21.x
+            "appeng.core.network.serverbound.InventoryActionPacket"
     };
     private static final String[] INVENTORY_ACTION_TYPES = {
-        "appeng.helpers.InventoryAction"
+            "appeng.helpers.InventoryAction"
     };
 
     private static volatile Object cachedMenu;
@@ -83,9 +85,9 @@ final class Ae2StorageIntegration {
         List<StoredStack> previous = cachedStacks;
         long cacheAge = now - cachedAtNanos;
         if (menu == cachedMenu
-            && gameTime == cachedGameTime
-            && cacheAge >= 0L
-            && cacheAge < CACHE_FALLBACK_NANOS) {
+                && gameTime == cachedGameTime
+                && cacheAge >= 0L
+                && cacheAge < CACHE_FALLBACK_NANOS) {
             return previous;
         }
 
@@ -184,13 +186,15 @@ final class Ae2StorageIntegration {
     /**
      * Takes exactly one result from an AE2 crafting terminal.
      *
-     * <p>A normal {@code QUICK_MOVE} container click is not the operation used
+     * <p>
+     * A normal {@code QUICK_MOVE} container click is not the operation used
      * by AE2's terminal screen. Its output slot is handled by
      * {@code CraftingTermSlot.doClick}, which is reached through AE2's
      * {@code InventoryActionPacket}. Calling the packet directly avoids
      * leaving the output in the terminal and, unlike {@code CRAFT_SHIFT},
      * {@code CRAFT_ITEM} performs one operation so the recipe-tree queue can
-     * keep its exact-count accounting.</p>
+     * keep its exact-count accounting.
+     * </p>
      *
      * @return {@code null} for a non-AE2 menu, otherwise whether the action
      *         was sent (or would be valid in a simulation)
@@ -240,14 +244,16 @@ final class Ae2StorageIntegration {
     /**
      * Stores the item currently held by an AE2 menu cursor in the ME network.
      *
-     * <p>AE2 exposes this operation through
-     * {@code MEStorageMenu.handleInteraction(-1, action)}.  Calling that
+     * <p>
+     * AE2 exposes this operation through
+     * {@code MEStorageMenu.handleInteraction(-1, action)}. Calling that
      * client-side entry point makes AE2 send its own interaction packet; the
-     * server then invokes the protected, powered insertion method.  This is
+     * server then invokes the protected, powered insertion method. This is
      * important because invoking the protected method on the client menu alone
-     * would only change a local copy.  The boolean argument is AE2's "single
+     * would only change a local copy. The boolean argument is AE2's "single
      * item" flag; recipe-tree output must be inserted as a complete stack, so
-     * callers pass {@code false}.</p>
+     * callers pass {@code false}.
+     * </p>
      *
      * @return {@code null} for a non-AE2 crafting menu, {@code true} when the
      *         AE2 method was invoked, or {@code false} when this AE2 version
@@ -267,9 +273,8 @@ final class Ae2StorageIntegration {
             }
             @SuppressWarnings({"rawtypes", "unchecked"})
             Object action = Enum.valueOf(
-                (Class<? extends Enum>) actionType.asSubclass(Enum.class),
-                single ? "SPLIT_OR_PLACE_SINGLE" : "PICKUP_OR_SET_DOWN"
-            );
+                    (Class<? extends Enum>) actionType.asSubclass(Enum.class),
+                    single ? "SPLIT_OR_PLACE_SINGLE" : "PICKUP_OR_SET_DOWN");
             Method method = findInteractionMethod(menu.getClass(), actionType);
             if (method == null) {
                 return false;
@@ -290,9 +295,9 @@ final class Ae2StorageIntegration {
             for (Method method : current.getDeclaredMethods()) {
                 Class<?>[] parameters = method.getParameterTypes();
                 if (method.getName().equals("handleInteraction")
-                    && parameters.length == 2
-                    && parameters[0] == long.class
-                    && parameters[1].isAssignableFrom(actionType)) {
+                        && parameters.length == 2
+                        && parameters[0] == long.class
+                        && parameters[1].isAssignableFrom(actionType)) {
                     try {
                         method.trySetAccessible();
                     } catch (RuntimeException ignored) {
@@ -346,9 +351,8 @@ final class Ae2StorageIntegration {
                 return;
             }
             view.sort((left, right) -> Boolean.compare(
-                isHighlightedEntry(right, keys),
-                isHighlightedEntry(left, keys)
-            ));
+                    isHighlightedEntry(right, keys),
+                    isHighlightedEntry(left, keys)));
             prioritizedRepo = repo;
             repoWasPrioritized = true;
         } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
@@ -418,7 +422,7 @@ final class Ae2StorageIntegration {
                         return false;
                     }
                 } else if (actual.isEmpty()
-                    || !RecipeTreeData.ingredientKey(actual).equals(RecipeTreeData.ingredientKey(expected))) {
+                        || !RecipeTreeData.ingredientKey(actual).equals(RecipeTreeData.ingredientKey(expected))) {
                     return false;
                 }
             }
@@ -504,7 +508,8 @@ final class Ae2StorageIntegration {
                 return List.of();
             }
             Object cachedInventory = invokeNoArg(storageService, "getCachedInventory");
-            List<StorageNetworkIntegration.StoredFluid> result = readFluidEntries(cachedInventory, "getKey", "getLongValue");
+            List<StorageNetworkIntegration.StoredFluid> result = readFluidEntries(cachedInventory, "getKey",
+                    "getLongValue");
             if (!result.isEmpty()) {
                 return result;
             }
@@ -521,14 +526,15 @@ final class Ae2StorageIntegration {
         }
     }
 
-    /** Reads AE2's mixed item/fluid repository once instead of walking it once
+    /**
+     * Reads AE2's mixed item/fluid repository once instead of walking it once
      * for items and a second time for fluids. Large networks commonly expose
      * thousands of entries, so keeping this pass linear is important while a
-     * recipe tree is refreshing. */
+     * recipe tree is refreshing.
+     */
     private static RepositorySnapshot readEntriesAndFluids(
-        Iterable<?> entries,
-        Class<?> itemKeyType
-    ) throws ReflectiveOperationException {
+            Iterable<?> entries,
+            Class<?> itemKeyType) throws ReflectiveOperationException {
         List<StoredStack> stacks = new ArrayList<>();
         List<StorageNetworkIntegration.StoredFluid> fluids = new ArrayList<>();
         for (Object entry : entries) {
@@ -578,65 +584,62 @@ final class Ae2StorageIntegration {
     }
 
     private record RepositorySnapshot(
-        List<StoredStack> stacks,
-        List<StorageNetworkIntegration.StoredFluid> fluids
-    ) {
+            List<StoredStack> stacks,
+            List<StorageNetworkIntegration.StoredFluid> fluids) {
     }
 
     private static List<StoredStack> readEntries(
-        Iterable<?> entries,
-        Class<?> itemKeyType,
-        String keyMethod,
-        String amountMethod
-    ) throws ReflectiveOperationException {
-            List<StoredStack> result = new ArrayList<>();
-            for (Object entry : entries) {
-                Object key = invokeNoArg(entry, keyMethod);
-                if (key == null) {
-                    key = invokeNoArg(entry, "getWhat");
-                }
-                if (key == null) {
-                    key = invokeNoArg(entry, "getKey");
-                }
-                if (key == null || !itemKeyType.isInstance(key)) {
-                    continue;
-                }
-                long amount = numberValue(invokeNoArg(entry, amountMethod));
-                if (amount <= 0) {
-                    amount = numberValue(invokeNoArg(entry, "getStoredAmount"));
-                }
-                if (amount <= 0) {
-                    amount = numberValue(invokeNoArg(entry, "getAmount"));
-                }
-                if (amount <= 0) {
-                    amount = numberValue(invokeNoArg(entry, "getLongValue"));
-                }
-                if (amount <= 0) {
-                    amount = numberValue(invokeNoArg(entry, "getValue"));
-                }
-                if (amount <= 0) {
-                    continue;
-                }
-
-                Object stackValue = invokeNoArg(key, "toStack");
-                if (!(stackValue instanceof ItemStack stack) || stack.isEmpty()) {
-                    stackValue = invokeNoArg(key, "getReadOnlyStack");
-                }
-                if (!(stackValue instanceof ItemStack stack) || stack.isEmpty()) {
-                    continue;
-                }
-                ItemStack representative = stack.copy();
-                representative.setCount(1);
-                result.add(new StoredStack(representative, amount));
+            Iterable<?> entries,
+            Class<?> itemKeyType,
+            String keyMethod,
+            String amountMethod) throws ReflectiveOperationException {
+        List<StoredStack> result = new ArrayList<>();
+        for (Object entry : entries) {
+            Object key = invokeNoArg(entry, keyMethod);
+            if (key == null) {
+                key = invokeNoArg(entry, "getWhat");
             }
-            return result;
+            if (key == null) {
+                key = invokeNoArg(entry, "getKey");
+            }
+            if (key == null || !itemKeyType.isInstance(key)) {
+                continue;
+            }
+            long amount = numberValue(invokeNoArg(entry, amountMethod));
+            if (amount <= 0) {
+                amount = numberValue(invokeNoArg(entry, "getStoredAmount"));
+            }
+            if (amount <= 0) {
+                amount = numberValue(invokeNoArg(entry, "getAmount"));
+            }
+            if (amount <= 0) {
+                amount = numberValue(invokeNoArg(entry, "getLongValue"));
+            }
+            if (amount <= 0) {
+                amount = numberValue(invokeNoArg(entry, "getValue"));
+            }
+            if (amount <= 0) {
+                continue;
+            }
+
+            Object stackValue = invokeNoArg(key, "toStack");
+            if (!(stackValue instanceof ItemStack stack) || stack.isEmpty()) {
+                stackValue = invokeNoArg(key, "getReadOnlyStack");
+            }
+            if (!(stackValue instanceof ItemStack stack) || stack.isEmpty()) {
+                continue;
+            }
+            ItemStack representative = stack.copy();
+            representative.setCount(1);
+            result.add(new StoredStack(representative, amount));
+        }
+        return result;
     }
 
     private static List<StorageNetworkIntegration.StoredFluid> readFluidEntries(
-        Object source,
-        String keyMethod,
-        String amountMethod
-    ) throws ReflectiveOperationException {
+            Object source,
+            String keyMethod,
+            String amountMethod) throws ReflectiveOperationException {
         if (!(source instanceof Iterable<?> entries)) {
             return List.of();
         }
@@ -730,12 +733,12 @@ final class Ae2StorageIntegration {
         Object key = invokeNoArgQuietly(entry, "getWhat");
         ItemStack stack = stackFromAeKey(key);
         if (stack != null && !stack.isEmpty()
-            && StorageNetworkIntegration.matchesHighlightKey(stack, keys)) {
+                && StorageNetworkIntegration.matchesHighlightKey(stack, keys)) {
             return true;
         }
         return FluidRecipeCompat.describeFluid(key)
-            .map(info -> keys.contains(info.key()))
-            .orElse(false);
+                .map(info -> keys.contains(info.key()))
+                .orElse(false);
     }
 
     private static ItemStack stackFromAeKey(Object key) {
@@ -798,9 +801,9 @@ final class Ae2StorageIntegration {
         for (Constructor<?> constructor : packetType.getConstructors()) {
             Class<?>[] parameters = constructor.getParameterTypes();
             if (parameters.length == 3
-                && parameters[0] == ResourceLocation.class
-                && parameters[1].isAssignableFrom(NonNullList.class)
-                && parameters[2] == boolean.class) {
+                    && parameters[0] == ResourceLocation.class
+                    && parameters[1].isAssignableFrom(NonNullList.class)
+                    && parameters[2] == boolean.class) {
                 return constructor;
             }
         }
@@ -808,15 +811,14 @@ final class Ae2StorageIntegration {
     }
 
     private static Constructor<?> findInventoryActionPacketConstructor(
-        Class<?> packetType,
-        Class<?> actionType
-    ) {
+            Class<?> packetType,
+            Class<?> actionType) {
         for (Constructor<?> constructor : packetType.getConstructors()) {
             Class<?>[] parameters = constructor.getParameterTypes();
             if (parameters.length == 3
-                && parameters[0].isAssignableFrom(actionType)
-                && parameters[1] == int.class
-                && parameters[2] == long.class) {
+                    && parameters[0].isAssignableFrom(actionType)
+                    && parameters[1] == int.class
+                    && parameters[2] == long.class) {
                 return constructor;
             }
         }
@@ -831,8 +833,8 @@ final class Ae2StorageIntegration {
             for (Method method : current.getDeclaredMethods()) {
                 Class<?>[] parameters = method.getParameterTypes();
                 if (method.getName().equals(name)
-                    && parameters.length == 1
-                    && parameters[0].isAssignableFrom(argumentType)) {
+                        && parameters.length == 1
+                        && parameters[0].isAssignableFrom(argumentType)) {
                     try {
                         method.trySetAccessible();
                     } catch (RuntimeException ignored) {
@@ -845,8 +847,8 @@ final class Ae2StorageIntegration {
         for (Method method : type.getMethods()) {
             Class<?>[] parameters = method.getParameterTypes();
             if (method.getName().equals(name)
-                && parameters.length == 1
-                && parameters[0].isAssignableFrom(argumentType)) {
+                    && parameters.length == 1
+                    && parameters[0].isAssignableFrom(argumentType)) {
                 return method;
             }
         }

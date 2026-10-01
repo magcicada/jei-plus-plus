@@ -34,20 +34,13 @@ public abstract class RecipeGuiTabsMixin {
     @Shadow
     public abstract boolean previousPage();
 
-    @Inject(
-            method = "createInputHandler",
-            at = @At("RETURN"),
-            cancellable = true,
-            remap = false
-    )
+    @Inject(method = "createInputHandler", at = @At("RETURN"), cancellable = true, remap = false)
     private void jeiPlusPlus$wrapTabInput(
-            CallbackInfoReturnable<IUserInputHandler> cir
-    ) {
+            CallbackInfoReturnable<IUserInputHandler> cir) {
         IUserInputHandler delegate = cir.getReturnValue();
         cir.setReturnValue(new RecipeGuiTabScrollInputHandler(
                 delegate,
-                this::jeiPlusPlus$handleMouseScrolled
-        ));
+                this::jeiPlusPlus$handleMouseScrolled));
     }
 
     /**
@@ -59,8 +52,7 @@ public abstract class RecipeGuiTabsMixin {
     private boolean jeiPlusPlus$handleMouseScrolled(
             double mouseX,
             double mouseY,
-            double scrollDelta
-    ) {
+            double scrollDelta) {
         if (scrollDelta == 0) {
             return false;
         }
@@ -94,8 +86,7 @@ public abstract class RecipeGuiTabsMixin {
     @Unique
     private boolean jeiPlusPlus$isPageNavigationBand(
             double mouseX,
-            double mouseY
-    ) {
+            double mouseY) {
         ImmutableRect2i back = pageNavigation.getBackButtonArea();
         ImmutableRect2i next = pageNavigation.getNextButtonArea();
 
@@ -106,14 +97,12 @@ public abstract class RecipeGuiTabsMixin {
         int left = Math.min(back.getX(), next.getX()) - 2;
         int right = Math.max(
                 back.getX() + back.getWidth(),
-                next.getX() + next.getWidth()
-        ) + 2;
+                next.getX() + next.getWidth()) + 2;
 
         int top = Math.min(back.getY(), next.getY()) - 2;
         int bottom = Math.max(
                 back.getY() + back.getHeight(),
-                next.getY() + next.getHeight()
-        ) + 2;
+                next.getY() + next.getHeight()) + 2;
 
         return mouseX >= left
                 && mouseX <= right

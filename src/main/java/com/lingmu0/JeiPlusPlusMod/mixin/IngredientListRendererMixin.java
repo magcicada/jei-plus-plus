@@ -19,8 +19,11 @@ import java.util.List;
 @Pseudo
 @Mixin(targets = "mezz.jei.gui.overlay.ingredients.IngredientListRenderer", remap = false)
 public abstract class IngredientListRendererMixin {
-    @Shadow @Final private List<?> slots;
-    @Shadow private int blocked;
+    @Shadow
+    @Final
+    private List<?> slots;
+    @Shadow
+    private int blocked;
 
     @Inject(method = "set", at = @At("HEAD"), cancellable = true, remap = false)
     private void jeiPlusPlus$setWithRowBreaks(int startIndex, List<IElement<?>> ingredientList, CallbackInfo ci) {

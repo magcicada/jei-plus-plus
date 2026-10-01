@@ -30,18 +30,27 @@ import java.lang.reflect.Field;
 
 @Mixin(value = BookmarkOverlay.class, remap = false)
 public abstract class BookmarkOverlayMixin {
-    @Shadow @Final private ScreenPropertiesCache screenPropertiesCache;
+    @Shadow
+    @Final
+    private ScreenPropertiesCache screenPropertiesCache;
 
-    @Shadow @Final private BookmarkList bookmarkList;
+    @Shadow
+    @Final
+    private BookmarkList bookmarkList;
 
     @Shadow
     public abstract boolean hasRoom();
 
-    @Unique private RecipeTreeSidebarButton jeiPlusPlus$treeButton;
-    @Unique private static volatile Field jeiPlusPlus$historyButtonField;
-    @Unique private static volatile boolean jeiPlusPlus$historyButtonFieldResolved;
-    @Unique private static volatile Field jeiPlusPlus$toggleAreaField;
-    @Unique private static volatile boolean jeiPlusPlus$toggleAreaFieldResolved;
+    @Unique
+    private RecipeTreeSidebarButton jeiPlusPlus$treeButton;
+    @Unique
+    private static volatile Field jeiPlusPlus$historyButtonField;
+    @Unique
+    private static volatile boolean jeiPlusPlus$historyButtonFieldResolved;
+    @Unique
+    private static volatile Field jeiPlusPlus$toggleAreaField;
+    @Unique
+    private static volatile boolean jeiPlusPlus$toggleAreaFieldResolved;
 
     /**
      * JEI's BookmarkOverlay constructor is not a stable extension point. JEI
@@ -98,13 +107,14 @@ public abstract class BookmarkOverlayMixin {
 
     @Inject(method = "drawScreen", at = @At("TAIL"), remap = false)
     private void jeiPlusPlus$drawTreeButton(Minecraft minecraft, GuiGraphics graphics, int mouseX, int mouseY,
-                                            float partialTicks, CallbackInfo ci) {
+            float partialTicks, CallbackInfo ci) {
         if (!jeiPlusPlus$isTreeButtonScreen()) {
             return;
         }
         jeiPlusPlus$ensureTreeButton();
         if (Minecraft.getInstance().screen instanceof RecipeTreeScreen) {
-            jeiPlusPlus$treeButton.updateBounds(new ImmutableRect2i(6, minecraft.getWindow().getGuiScaledHeight() - 26, 20, 20));
+            jeiPlusPlus$treeButton
+                    .updateBounds(new ImmutableRect2i(6, minecraft.getWindow().getGuiScaledHeight() - 26, 20, 20));
         }
         RecipeTreeFavorites.refreshThrottled();
         jeiPlusPlus$treeButton.tick();
@@ -113,7 +123,7 @@ public abstract class BookmarkOverlayMixin {
 
     @Inject(method = "drawTooltips", at = @At("TAIL"), remap = false)
     private void jeiPlusPlus$drawTreeButtonTooltip(Minecraft minecraft, GuiGraphics graphics, int mouseX, int mouseY,
-                                                   CallbackInfo ci) {
+            CallbackInfo ci) {
         if (jeiPlusPlus$isTreeButtonScreen()) {
             jeiPlusPlus$ensureTreeButton();
             jeiPlusPlus$treeButton.drawTooltips(graphics, mouseX, mouseY);
@@ -126,8 +136,7 @@ public abstract class BookmarkOverlayMixin {
             GuiGraphics graphics,
             int mouseX,
             int mouseY,
-            CallbackInfo ci
-    ) {
+            CallbackInfo ci) {
         if (CreativeTabGridCompat.isAnySelectorOpen()) {
             ci.cancel();
         }
@@ -140,13 +149,11 @@ public abstract class BookmarkOverlayMixin {
         IUserInputHandler treeButtonInput = new CombinedInputHandler(
                 "JeiPlusPlusRecipeTreeButton",
                 new RecipeTreeRightClickHandler(jeiPlusPlus$treeButton),
-                jeiPlusPlus$treeButton.createInputHandler()
-        );
+                jeiPlusPlus$treeButton.createInputHandler());
         IUserInputHandler normalScreenInput = new CombinedInputHandler(
                 "JeiPlusPlusRecipeTreeAndBookmarks",
                 treeButtonInput,
-                original
-        );
+                original);
         cir.setReturnValue(new ProxyInputHandler(() -> {
             if (!JeiPlusPlusConfig.RECIPE_TREE_ENABLED.get()) {
                 return original;
@@ -161,7 +168,8 @@ public abstract class BookmarkOverlayMixin {
     @Unique
     private boolean jeiPlusPlus$isTreeButtonScreen() {
         return JeiPlusPlusConfig.RECIPE_TREE_ENABLED.get()
-                && (screenPropertiesCache.hasValidScreen() || Minecraft.getInstance().screen instanceof RecipeTreeScreen);
+                && (screenPropertiesCache.hasValidScreen()
+                        || Minecraft.getInstance().screen instanceof RecipeTreeScreen);
     }
 
     @Unique
@@ -259,6 +267,5 @@ public abstract class BookmarkOverlayMixin {
             return ImmutableRect2i.EMPTY;
         }
     }
-
 
 }

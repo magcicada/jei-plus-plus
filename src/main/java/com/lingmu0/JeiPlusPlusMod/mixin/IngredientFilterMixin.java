@@ -24,7 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /** Adds creative-tab filtering and Reliable-EMI-style expandable groups. */
 @Mixin(value = IngredientFilter.class, remap = false)
-public abstract class IngredientFilterMixin implements IngredientListFeatureSource, IngredientListFeatures.IngredientListExpansionState {
+public abstract class IngredientFilterMixin
+        implements
+            IngredientListFeatureSource,
+            IngredientListFeatures.IngredientListExpansionState {
     @Unique
     private volatile int jeiPlusPlus$selectedCreativeTab;
     @Unique
@@ -70,10 +73,10 @@ public abstract class IngredientFilterMixin implements IngredientListFeatureSour
         List<IElement<?>> cachedSource = jeiPlusPlus$sourceCache;
         List<IElement<?>> cachedResult = jeiPlusPlus$transformedCache;
         if (source == cachedSource
-            && cachedResult != null
-            && creativeEnabled == jeiPlusPlus$cachedCreativeEnabled
-            && groupingEnabled == jeiPlusPlus$cachedGroupingEnabled
-            && selectedTab == jeiPlusPlus$cachedCreativeTab) {
+                && cachedResult != null
+                && creativeEnabled == jeiPlusPlus$cachedCreativeEnabled
+                && groupingEnabled == jeiPlusPlus$cachedGroupingEnabled
+                && selectedTab == jeiPlusPlus$cachedCreativeTab) {
             cir.setReturnValue(cachedResult);
             return;
         }

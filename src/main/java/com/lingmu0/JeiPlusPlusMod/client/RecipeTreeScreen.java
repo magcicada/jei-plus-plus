@@ -250,13 +250,13 @@ public final class RecipeTreeScreen extends Screen {
         float contentHeight = Math.max(1, maxY - minY + contentPadding * 2.0f);
         float availableWidth = Math.max(1, width - 24);
         float availableHeight = Math.max(1, height - 24);
-        // Very wide/deep trees must still fit on the first frame.  Users can
+        // Very wide/deep trees must still fit on the first frame. Users can
         // zoom back in after opening, but clipping the initial view hides the
         // active root and makes the saved crafting tree hard to recover.
         // Keep compact trees at their natural size. Enlarging a small tree to
         // fill the entire window makes every newly opened view feel displaced.
         zoom = Math.max(0.10f, Math.min(1.0f,
-            Math.min(availableWidth / contentWidth, availableHeight / contentHeight)));
+                Math.min(availableWidth / contentWidth, availableHeight / contentHeight)));
         offsetX = -(minX + maxX) / 2.0f;
         offsetY = -(minY + maxY) / 2.0f;
     }
@@ -287,20 +287,18 @@ public final class RecipeTreeScreen extends Screen {
             }
 
             graphics.drawCenteredString(
-                font,
-                Component.translatable("jei_plus_plus.recipe_tree.total_cost"),
-                costCenterX,
-                costY - 18,
-                0xFFFFFF
-            );
+                    font,
+                    Component.translatable("jei_plus_plus.recipe_tree.total_cost"),
+                    costCenterX,
+                    costY - 18,
+                    0xFFFFFF);
             if (costs.stream().anyMatch(RenderCost::leftover)) {
                 graphics.drawCenteredString(
-                    font,
-                    Component.translatable("jei_plus_plus.recipe_tree.leftovers"),
-                    costCenterX,
-                    costY + 22,
-                    0xFFFFFF
-                );
+                        font,
+                        Component.translatable("jei_plus_plus.recipe_tree.leftovers"),
+                        costCenterX,
+                        costY + 22,
+                        0xFFFFFF);
             }
             drawModeButton(graphics, tree, mouseX, mouseY);
             drawBatchLabel(graphics, tree, mouseX, mouseY);
@@ -329,15 +327,14 @@ public final class RecipeTreeScreen extends Screen {
         graphics.pose().translate(0, 0, 500);
         graphics.fill(0, 0, width, height, 0x78000000);
         graphics.fill(panelX - 1, panelY - 1, panelX + INPUT_CHOICE_WIDTH + 1,
-            panelY + INPUT_CHOICE_HEIGHT + 1, 0xFFE0E0E0);
+                panelY + INPUT_CHOICE_HEIGHT + 1, 0xFFE0E0E0);
         graphics.fill(panelX, panelY, panelX + INPUT_CHOICE_WIDTH, panelY + INPUT_CHOICE_HEIGHT, 0xF0101010);
         graphics.drawCenteredString(
-            font,
-            Component.translatable("jei_plus_plus.recipe_tree.input_choice.title", choices.size()),
-            panelX + INPUT_CHOICE_WIDTH / 2,
-            panelY + 8,
-            0xFFFFFFFF
-        );
+                font,
+                Component.translatable("jei_plus_plus.recipe_tree.input_choice.title", choices.size()),
+                panelX + INPUT_CHOICE_WIDTH / 2,
+                panelY + 8,
+                0xFFFFFFFF);
 
         int start = inputChoicePage * INPUT_CHOICE_PAGE_SIZE;
         int end = Math.min(choices.size(), start + INPUT_CHOICE_PAGE_SIZE);
@@ -348,7 +345,7 @@ public final class RecipeTreeScreen extends Screen {
             ItemStack choice = choices.get(index);
             boolean hovered = contains(mouseX, mouseY, slotX, slotY, 18, 18);
             boolean selected = inputChoiceNode.explicitChoice()
-                && inputChoiceNode.ingredientKey().equals(RecipeTreeData.ingredientKey(choice));
+                    && inputChoiceNode.ingredientKey().equals(RecipeTreeData.ingredientKey(choice));
             int border = selected ? 0xFF55FFAA : (hovered ? 0xFF8099FF : 0xFF707070);
             graphics.fill(slotX, slotY, slotX + 18, slotY + 18, border);
             graphics.fill(slotX + 1, slotY + 1, slotX + 17, slotY + 17, 0xFF202020);
@@ -362,26 +359,25 @@ public final class RecipeTreeScreen extends Screen {
         int footerY = panelY + INPUT_CHOICE_HEIGHT - 18;
         int pageCount = inputChoicePageCount();
         drawChoicePageButton(graphics, panelX + 7, footerY, "<", inputChoicePage > 0,
-            contains(mouseX, mouseY, panelX + 7, footerY, 16, 14));
+                contains(mouseX, mouseY, panelX + 7, footerY, 16, 14));
         drawChoicePageButton(graphics, panelX + INPUT_CHOICE_WIDTH - 23, footerY, ">",
-            inputChoicePage + 1 < pageCount,
-            contains(mouseX, mouseY, panelX + INPUT_CHOICE_WIDTH - 23, footerY, 16, 14));
+                inputChoicePage + 1 < pageCount,
+                contains(mouseX, mouseY, panelX + INPUT_CHOICE_WIDTH - 23, footerY, 16, 14));
         graphics.drawCenteredString(font, (inputChoicePage + 1) + "/" + pageCount,
-            panelX + INPUT_CHOICE_WIDTH / 2, footerY + 3, 0xFFD0D0D0);
+                panelX + INPUT_CHOICE_WIDTH / 2, footerY + 3, 0xFFD0D0D0);
         int closeX = panelX + INPUT_CHOICE_WIDTH - 17;
         graphics.drawCenteredString(font, "x", closeX + 6, panelY + 7,
-            contains(mouseX, mouseY, closeX, panelY + 4, 12, 12) ? 0xFFFF7777 : 0xFFD0D0D0);
+                contains(mouseX, mouseY, closeX, panelY + 4, 12, 12) ? 0xFFFF7777 : 0xFFD0D0D0);
         graphics.pose().popPose();
     }
 
     private void drawChoicePageButton(
-        GuiGraphics graphics,
-        int x,
-        int y,
-        String text,
-        boolean enabled,
-        boolean hovered
-    ) {
+            GuiGraphics graphics,
+            int x,
+            int y,
+            String text,
+            boolean enabled,
+            boolean hovered) {
         int border = enabled && hovered ? 0xFF8099FF : 0xFF707070;
         graphics.fill(x, y, x + 16, y + 14, border);
         graphics.fill(x + 1, y + 1, x + 15, y + 13, 0xFF202020);
@@ -391,19 +387,17 @@ public final class RecipeTreeScreen extends Screen {
     private void renderWelcome(GuiGraphics graphics) {
         graphics.drawCenteredString(font, title, width / 2, height / 2 - 36, 0xFFFFFF);
         graphics.drawCenteredString(
-            font,
-            Component.translatable("jei_plus_plus.recipe_tree.empty"),
-            width / 2,
-            height / 2 - 12,
-            0xBFD0D0D0
-        );
+                font,
+                Component.translatable("jei_plus_plus.recipe_tree.empty"),
+                width / 2,
+                height / 2 - 12,
+                0xBFD0D0D0);
         graphics.drawCenteredString(
-            font,
-            Component.translatable("jei_plus_plus.recipe_tree.empty_hint"),
-            width / 2,
-            height / 2 + 6,
-            0xBFD0D0D0
-        );
+                font,
+                Component.translatable("jei_plus_plus.recipe_tree.empty_hint"),
+                width / 2,
+                height / 2 + 6,
+                0xBFD0D0D0);
     }
 
     private void drawConnection(GuiGraphics graphics, RecipeTreeData.Node parent, RecipeTreeData.Node child) {
@@ -475,13 +469,12 @@ public final class RecipeTreeScreen extends Screen {
     }
 
     private void drawTransferButton(
-        GuiGraphics graphics,
-        RecipeTreeData.Node node,
-        int left,
-        int top,
-        int mouseX,
-        int mouseY
-    ) {
+            GuiGraphics graphics,
+            RecipeTreeData.Node node,
+            int left,
+            int top,
+            int mouseX,
+            int mouseY) {
         // The transfer action belongs to the work-block/category icon, not
         // to the output item area on the right side of the recipe node.
         int x = left + 2 + 18 - TRANSFER_BUTTON_SIZE - 1;
@@ -515,8 +508,8 @@ public final class RecipeTreeScreen extends Screen {
     private void drawBatchLabel(GuiGraphics graphics, RecipeTreeData.Tree tree, int mouseX, int mouseY) {
         int[] treeMouse = treeMouse(mouseX, mouseY);
         int color = containsTreeArea(treeMouse[0], treeMouse[1], batchX, batchY, batchWidth, 22)
-            ? 0xFF8099FF
-            : 0xFFFFFFFF;
+                ? 0xFF8099FF
+                : 0xFFFFFFFF;
         graphics.drawString(font, "x" + tree.batches(), batchX + 6, batchY + 7, color, true);
     }
 
@@ -527,12 +520,11 @@ public final class RecipeTreeScreen extends Screen {
             graphics.renderItem(stack, renderCost.x, renderCost.y);
         }
         drawAmount(
-            graphics,
-            costText(renderCost.cost, renderCost.leftover),
-            renderCost.x,
-            renderCost.y,
-            renderCost.leftover ? 0xFFFFFFFF : costColor(renderCost.cost)
-        );
+                graphics,
+                costText(renderCost.cost, renderCost.leftover),
+                renderCost.x,
+                renderCost.y,
+                renderCost.leftover ? 0xFFFFFFFF : costColor(renderCost.cost));
     }
 
     private void drawAmount(GuiGraphics graphics, String text, int itemX, int itemY, int color) {
@@ -555,11 +547,10 @@ public final class RecipeTreeScreen extends Screen {
         graphics.drawCenteredString(font, "?", x + 8, y + 4, color);
         if (contains(mouseX, mouseY, x, y, 16, 16)) {
             graphics.renderTooltip(
-                font,
-                font.split(Component.translatable("jei_plus_plus.recipe_tree.help"), Math.min(280, width - 30)),
-                mouseX,
-                mouseY
-            );
+                    font,
+                    font.split(Component.translatable("jei_plus_plus.recipe_tree.help"), Math.min(280, width - 30)),
+                    mouseX,
+                    mouseY);
         }
     }
 
@@ -580,22 +571,20 @@ public final class RecipeTreeScreen extends Screen {
         if (node != null) {
             if (isTransferArea(node, mouseX, mouseY)) {
                 graphics.renderTooltip(
-                    font,
-                    Component.translatable("jei_plus_plus.recipe_tree.transfer"),
-                    mouseX,
-                    mouseY
-                );
+                        font,
+                        Component.translatable("jei_plus_plus.recipe_tree.transfer"),
+                        mouseX,
+                        mouseY);
             } else if (node.isOutputChoice() && isAlternativeArea(node, mouseX, mouseY)) {
                 graphics.renderTooltip(
-                    font,
-                    Component.translatable("jei_plus_plus.recipe_tree.output_choice", node.alternatives().size()),
-                    mouseX,
-                    mouseY
-                );
+                        font,
+                        Component.translatable("jei_plus_plus.recipe_tree.output_choice", node.alternatives().size()),
+                        mouseX,
+                        mouseY);
             } else if (isAlternativeArea(node, mouseX, mouseY)) {
                 String key = node.explicitChoice()
-                    ? "jei_plus_plus.recipe_tree.input_choice.selected"
-                    : "jei_plus_plus.recipe_tree.input_choice";
+                        ? "jei_plus_plus.recipe_tree.input_choice.selected"
+                        : "jei_plus_plus.recipe_tree.input_choice";
                 graphics.renderTooltip(font, Component.translatable(key, node.alternatives().size()), mouseX, mouseY);
             } else if ((hasUnfixedAlternatives(node) || node.isOutputChoice()) && isItemArea(node, mouseX, mouseY)) {
                 renderAlternativeTooltip(graphics, node, mouseX, mouseY);
@@ -611,11 +600,12 @@ public final class RecipeTreeScreen extends Screen {
         int[] treeMouse = treeMouse(mouseX, mouseY);
         RecipeTreeData.Tree tree = RecipeTreeSession.tree();
         if (tree != null && containsTreeArea(treeMouse[0], treeMouse[1], batchX, batchY, batchWidth, 22)) {
-            graphics.renderTooltip(font, Component.translatable("jei_plus_plus.recipe_tree.batch", tree.batches()), mouseX, mouseY);
+            graphics.renderTooltip(font, Component.translatable("jei_plus_plus.recipe_tree.batch", tree.batches()),
+                    mouseX, mouseY);
         } else if (tree != null && containsTreeArea(treeMouse[0], treeMouse[1], modeX, modeY, 16, 16)) {
             String key = tree.craftingMode()
-                ? "jei_plus_plus.recipe_tree.mode.craft"
-                : "jei_plus_plus.recipe_tree.mode.view";
+                    ? "jei_plus_plus.recipe_tree.mode.craft"
+                    : "jei_plus_plus.recipe_tree.mode.view";
             graphics.renderTooltip(font, Component.translatable(key), mouseX, mouseY);
         } else {
             for (RenderCost cost : costs) {
@@ -631,11 +621,10 @@ public final class RecipeTreeScreen extends Screen {
 
     /** Render the same rich tag/candidate tooltip used by JEI recipe slots. */
     private void renderAlternativeTooltip(
-        GuiGraphics graphics,
-        RecipeTreeData.Node node,
-        int mouseX,
-        int mouseY
-    ) {
+            GuiGraphics graphics,
+            RecipeTreeData.Node node,
+            int mouseX,
+            int mouseY) {
         IJeiRuntime runtime = DirectoryRecipePlugin.getJeiRuntime();
         if (runtime == null || node == null) {
             if (node == null || !FluidRecipeCompat.renderTooltip(graphics, node.stack(), mouseX, mouseY)) {
@@ -645,39 +634,39 @@ public final class RecipeTreeScreen extends Screen {
         }
 
         List<ItemStack> alternatives = node.alternatives().stream()
-            .map(stack -> {
-                ItemStack copy = FluidRecipeCompat.copyWithDisplay(stack);
-                copy.setCount(1);
-                return copy;
-            })
-            .toList();
+                .map(stack -> {
+                    ItemStack copy = FluidRecipeCompat.copyWithDisplay(stack);
+                    copy.setCount(1);
+                    return copy;
+                })
+                .toList();
         ItemStack displayed = FluidRecipeCompat.copyWithDisplay(node.stack());
         displayed.setCount(1);
         if (FluidRecipeCompat.renderTooltip(graphics, displayed, mouseX, mouseY)) {
             return;
         }
         var typed = runtime.getIngredientManager()
-            .createTypedIngredient(VanillaTypes.ITEM_STACK, displayed);
+                .createTypedIngredient(VanillaTypes.ITEM_STACK, displayed);
         if (typed.isEmpty()) {
             graphics.renderTooltip(font, displayed, mouseX, mouseY);
             return;
         }
 
         IIngredientRenderer<ItemStack> renderer = runtime.getIngredientManager()
-            .getIngredientRenderer(VanillaTypes.ITEM_STACK);
+                .getIngredientRenderer(VanillaTypes.ITEM_STACK);
         IIngredientHelper<ItemStack> helper = runtime.getIngredientManager()
-            .getIngredientHelper(VanillaTypes.ITEM_STACK);
+                .getIngredientHelper(VanillaTypes.ITEM_STACK);
         JeiTooltip tooltip = new JeiTooltip();
         addSafeIngredientTooltip(tooltip, runtime, renderer, typed.get());
         helper.getTagKeyEquivalent(alternatives).ifPresent(tagKey -> {
             tooltip.add(Component.translatable("jei.tooltip.recipe.tag", "")
-                .withStyle(ChatFormatting.GRAY));
+                    .withStyle(ChatFormatting.GRAY));
             tooltip.add(Services.PLATFORM.getRenderHelper().getName(tagKey)
-                .copy().withStyle(ChatFormatting.GRAY));
+                    .copy().withStyle(ChatFormatting.GRAY));
         });
         if (alternatives.size() > 1) {
             JeiTooltipCompat.createTagContent(runtime, renderer, alternatives)
-                .ifPresent(tooltip::add);
+                    .ifPresent(tooltip::add);
         }
         graphics.pose().pushPose();
         graphics.pose().translate(0, 0, 700);
@@ -687,11 +676,10 @@ public final class RecipeTreeScreen extends Screen {
 
     /** JEI 15.48 renamed getTooltip to getRichTooltip without changing its arguments. */
     private static void addSafeIngredientTooltip(
-        JeiTooltip tooltip,
-        IJeiRuntime runtime,
-        IIngredientRenderer<ItemStack> renderer,
-        ITypedIngredient<ItemStack> typed
-    ) {
+            JeiTooltip tooltip,
+            IJeiRuntime runtime,
+            IIngredientRenderer<ItemStack> renderer,
+            ITypedIngredient<ItemStack> typed) {
         for (String name : List.of("getRichTooltip", "getTooltip")) {
             for (Method method : SafeIngredientUtil.class.getMethods()) {
                 if (!method.getName().equals(name) || method.getParameterCount() != 4) {
@@ -713,7 +701,8 @@ public final class RecipeTreeScreen extends Screen {
         int[] point = treeMouse(mouseX, mouseY);
         for (RecipeTreeData.Node node : visibleNodes) {
             int width = nodeWidth(node);
-            if (containsTreeArea(point[0], point[1], node.x() - width / 2, node.y() - NODE_HEIGHT / 2, width, NODE_HEIGHT)) {
+            if (containsTreeArea(point[0], point[1], node.x() - width / 2, node.y() - NODE_HEIGHT / 2, width,
+                    NODE_HEIGHT)) {
                 return node;
             }
         }
@@ -756,7 +745,7 @@ public final class RecipeTreeScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // JEI draws the global tree toggle on top of this screen.  The normal
+        // JEI draws the global tree toggle on top of this screen. The normal
         // JEI input handler is not reached when Screen.mouseClicked consumes
         // the event, so handle the same hit box here as well.
         if (isGlobalTreeButton(mouseX, mouseY)) {
@@ -825,14 +814,14 @@ public final class RecipeTreeScreen extends Screen {
             }
             if (button == 0) {
                 if (!hasShiftDown() && hasUnfixedAlternatives(node)
-                    && !node.isOutputChoice() && isItemArea(node, mouseX, mouseY)) {
+                        && !node.isOutputChoice() && isItemArea(node, mouseX, mouseY)) {
                     showCandidateDirectory(node);
                 } else if (isCategoryArea(node, mouseX, mouseY) && node.recipe() != null) {
                     showExactRecipe(node);
                 } else if (hasShiftDown()) {
-                     // Shift-clicking a canvas node only resolves its first
-                     // non-excluded candidate. Recursive crafting is
-                     // deliberately owned by the synthetic recipe bookmark.
+                    // Shift-clicking a canvas node only resolves its first
+                    // non-excluded candidate. Recursive crafting is
+                    // deliberately owned by the synthetic recipe bookmark.
                     if (RecipeTreeSession.autoResolve(node)) {
                         rebuildLayout(false);
                     }
@@ -851,7 +840,7 @@ public final class RecipeTreeScreen extends Screen {
 
     private boolean isGlobalTreeButton(double mouseX, double mouseY) {
         return mouseX >= 6 && mouseX < 26
-            && mouseY >= height - 26 && mouseY < height - 6;
+                && mouseY >= height - 26 && mouseY < height - 6;
     }
 
     private void chooseInput(RecipeTreeData.Node node) {
@@ -894,7 +883,7 @@ public final class RecipeTreeScreen extends Screen {
             ItemStack stack = FluidRecipeCompat.copyWithDisplay(alternative);
             stack.setCount(1);
             FluidRecipeCompat.toTyped(runtime.getIngredientManager(), stack)
-                .ifPresent(typed::add);
+                    .ifPresent(typed::add);
         }
         DirectoryViewer.show(runtime.getRecipesGui(), typed);
     }
@@ -952,8 +941,8 @@ public final class RecipeTreeScreen extends Screen {
         int localX = (int) mouseX - inputChoiceX() - 6;
         int localY = (int) mouseY - inputChoiceY() - 24;
         if (localX < 0 || localY < 0
-            || localX >= INPUT_CHOICE_COLUMNS * INPUT_CHOICE_SLOT_SIZE
-            || localY >= INPUT_CHOICE_ROWS * INPUT_CHOICE_SLOT_SIZE) {
+                || localX >= INPUT_CHOICE_COLUMNS * INPUT_CHOICE_SLOT_SIZE
+                || localY >= INPUT_CHOICE_ROWS * INPUT_CHOICE_SLOT_SIZE) {
             return -1;
         }
         int column = localX / INPUT_CHOICE_SLOT_SIZE;
@@ -987,11 +976,11 @@ public final class RecipeTreeScreen extends Screen {
         }
         Optional<? extends IFocus<?>> fluidFocus = FluidRecipeCompat.createOutputFocus(runtime, node.stack());
         Optional<IFocus<ItemStack>> itemFocus = fluidFocus.isPresent()
-            ? Optional.empty()
-            : RecipeTreeData.createOutputFocus(runtime, node.stack());
+                ? Optional.empty()
+                : RecipeTreeData.createOutputFocus(runtime, node.stack());
         IFocus<?> focus = fluidFocus.isPresent()
-            ? fluidFocus.get()
-            : itemFocus.orElse(null);
+                ? fluidFocus.get()
+                : itemFocus.orElse(null);
         if (focus == null) {
             return;
         }
@@ -1006,10 +995,9 @@ public final class RecipeTreeScreen extends Screen {
             return;
         }
         runtime.getRecipesGui().showRecipes(
-            (mezz.jei.api.recipe.category.IRecipeCategory) node.recipe().ref().category(),
-            List.of(node.recipe().ref().recipe()),
-            List.<IFocus<?>>of()
-        );
+                (mezz.jei.api.recipe.category.IRecipeCategory) node.recipe().ref().category(),
+                List.of(node.recipe().ref().recipe()),
+                List.<IFocus<?>>of());
     }
 
     @Override
@@ -1113,9 +1101,9 @@ public final class RecipeTreeScreen extends Screen {
     }
 
     private int[] treeMouse(double mouseX, double mouseY) {
-        return new int[] {
-            (int) ((mouseX - width / 2.0) / zoom - offsetX),
-            (int) ((mouseY - height / 2.0) / zoom - offsetY)
+        return new int[]{
+                (int) ((mouseX - width / 2.0) / zoom - offsetX),
+                (int) ((mouseY - height / 2.0) / zoom - offsetY)
         };
     }
 
@@ -1157,8 +1145,8 @@ public final class RecipeTreeScreen extends Screen {
         }
         boolean fluid = FluidRecipeCompat.treeFluid(cost.stack()).isPresent();
         long required = fluid
-            ? FluidRecipeCompat.amountForUnits(cost.stack(), cost.required())
-            : cost.required();
+                ? FluidRecipeCompat.amountForUnits(cost.stack(), cost.required())
+                : cost.required();
         return cost.supplied() >= required ? 0xFF55FFAA : 0xFFFF5555;
     }
 
@@ -1167,14 +1155,14 @@ public final class RecipeTreeScreen extends Screen {
         boolean fluid = FluidRecipeCompat.treeFluid(cost.stack()).isPresent();
         if (!leftover && tree != null && tree.craftingMode()) {
             String supplied = fluid
-                ? FluidRecipeCompat.formatAmount(cost.supplied())
-                : quantityText(cost.stack(), cost.supplied(), false);
+                    ? FluidRecipeCompat.formatAmount(cost.supplied())
+                    : quantityText(cost.stack(), cost.supplied(), false);
             return supplied
-                + "/" + quantityText(cost.stack(), cost.required(), fluid);
+                    + "/" + quantityText(cost.stack(), cost.required(), fluid);
         }
         return !fluid && cost.required() == 1
-            ? ""
-            : quantityText(cost.stack(), cost.required(), fluid);
+                ? ""
+                : quantityText(cost.stack(), cost.required(), fluid);
     }
 
     private static String formatNodeAmount(ItemStack stack, long amount) {
@@ -1207,8 +1195,8 @@ public final class RecipeTreeScreen extends Screen {
 
     private static String trim(double value) {
         return value >= 100
-            ? String.format(Locale.ROOT, "%.0f", value)
-            : String.format(Locale.ROOT, "%.1f", value).replace(".0", "");
+                ? String.format(Locale.ROOT, "%.0f", value)
+                : String.format(Locale.ROOT, "%.1f", value).replace(".0", "");
     }
 
     private static boolean contains(double mouseX, double mouseY, int x, int y, int width, int height) {

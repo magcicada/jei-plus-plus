@@ -16,11 +16,10 @@ import java.util.Optional;
 public abstract class RecipeGuiLayoutsMixin {
     @Inject(method = "drawTooltips", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private void jeiPlusPlus$hideRecipeTooltipsWhileSelectorOpen(
-        GuiGraphics graphics,
-        int mouseX,
-        int mouseY,
-        org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci
-    ) {
+            GuiGraphics graphics,
+            int mouseX,
+            int mouseY,
+            org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
         if (CreativeTabGridCompat.isAnySelectorOpen()) {
             ci.cancel();
         }
@@ -29,9 +28,8 @@ public abstract class RecipeGuiLayoutsMixin {
     @Inject(method = "getWidth", at = @At("RETURN"), cancellable = true, remap = false)
     private void jeiPlusPlus$reserveRecipeTreeWidth(CallbackInfoReturnable<Integer> cir) {
         int extra = com.lingmu0.JeiPlusPlusMod.client.RecipeTreeOverlay.extraWidth(
-            (RecipeGuiLayouts) (Object) this,
-            cir.getReturnValue()
-        );
+                (RecipeGuiLayouts) (Object) this,
+                cir.getReturnValue());
         if (extra > 0) {
             cir.setReturnValue(cir.getReturnValue() + extra);
         }
@@ -39,11 +37,11 @@ public abstract class RecipeGuiLayoutsMixin {
 
     @Inject(method = "draw", at = @At("TAIL"), remap = false)
     private void jeiPlusPlus$drawRecipeTreeButton(
-        GuiGraphics guiGraphics,
-        int mouseX,
-        int mouseY,
-        CallbackInfoReturnable<Optional<IRecipeLayoutDrawable<?>>> cir
-    ) {
-        com.lingmu0.JeiPlusPlusMod.client.RecipeTreeOverlay.draw((RecipeGuiLayouts) (Object) this, guiGraphics, mouseX, mouseY);
+            GuiGraphics guiGraphics,
+            int mouseX,
+            int mouseY,
+            CallbackInfoReturnable<Optional<IRecipeLayoutDrawable<?>>> cir) {
+        com.lingmu0.JeiPlusPlusMod.client.RecipeTreeOverlay.draw((RecipeGuiLayouts) (Object) this, guiGraphics, mouseX,
+                mouseY);
     }
 }

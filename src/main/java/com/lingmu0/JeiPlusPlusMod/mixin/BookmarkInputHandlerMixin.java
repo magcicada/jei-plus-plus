@@ -33,35 +33,37 @@ import java.util.Optional;
 /**
  * Integrates JEI++'s output-slot recipe bookmark preference with JEI 15.62.
  *
- * <p>When JEI++'s preference and JEI's BOOKMARKED recipe sorter are both
+ * <p>
+ * When JEI++'s preference and JEI's BOOKMARKED recipe sorter are both
  * enabled, an output-slot bookmark becomes a recipe bookmark and uses the
  * exact output ingredient under the mouse. Input slots are left entirely to
- * JEI's normal ingredient-bookmark path.</p>
+ * JEI's normal ingredient-bookmark path.
+ * </p>
  */
 @Mixin(value = BookmarkInputHandler.class, remap = false)
 public abstract class BookmarkInputHandlerMixin {
-    @Shadow @Final private BookmarkList bookmarkList;
-    @Shadow @Final private RecipesGui recipesGui;
+    @Shadow
+    @Final
+    private BookmarkList bookmarkList;
+    @Shadow
+    @Final
+    private RecipesGui recipesGui;
 
     /**
      * JEI calls this before {@code handleIngredientBookmark}. We only take over
      * output slots when JEI++ explicitly prefers recipe bookmarks.
      *
-     * <p>If JEI's BOOKMARKED sorting stage is disabled, return empty so JEI's
+     * <p>
+     * If JEI's BOOKMARKED sorting stage is disabled, return empty so JEI's
      * own {@code handleUserInput} naturally falls through to
      * {@code handleIngredientBookmark}. This preserves normal ingredient
-     * bookmarks without reimplementing JEI's bookmark list logic.</p>
+     * bookmarks without reimplementing JEI's bookmark list logic.
+     * </p>
      */
-    @Inject(
-            method = "handleRecipeBookmark",
-            at = @At("HEAD"),
-            cancellable = true,
-            remap = false
-    )
+    @Inject(method = "handleRecipeBookmark", at = @At("HEAD"), cancellable = true, remap = false)
     private void jeiPlusPlus$handlePreferredRecipeBookmark(
             UserInput input,
-            CallbackInfoReturnable<Optional<IUserInputHandler>> cir
-    ) {
+            CallbackInfoReturnable<Optional<IUserInputHandler>> cir) {
         if (!JeiPlusPlusConfig.PREFER_RECIPE_BOOKMARK_ON_OUTPUT.get()) {
             return;
         }
@@ -75,8 +77,8 @@ public abstract class BookmarkInputHandlerMixin {
         double mouseX = input.getMouseX();
         double mouseY = input.getMouseY();
 
-        Optional<IRecipeLayoutWithButtons<?>> layoutWithButtonsOptional =
-                recipesGui.getRecipeLayoutUnderMouse(mouseX, mouseY);
+        Optional<IRecipeLayoutWithButtons<?>> layoutWithButtonsOptional = recipesGui.getRecipeLayoutUnderMouse(mouseX,
+                mouseY);
         if (layoutWithButtonsOptional.isEmpty()) {
             return;
         }
@@ -110,8 +112,7 @@ public abstract class BookmarkInputHandlerMixin {
         RecipeBookmark<?, ?> bookmark = jeiPlusPlus$createBookmarkForHoveredOutput(
                 layout,
                 hoveredOutput.get(),
-                templateBookmark
-        );
+                templateBookmark);
         if (bookmark == null) {
             cir.setReturnValue(Optional.empty());
             return;
@@ -123,8 +124,7 @@ public abstract class BookmarkInputHandlerMixin {
 
         IUserInputHandler currentHandler = (IUserInputHandler) (Object) this;
         cir.setReturnValue(Optional.of(
-                new SameElementInputHandler(currentHandler, layout::isMouseOver)
-        ));
+                new SameElementInputHandler(currentHandler, layout::isMouseOver)));
     }
 
     /**
@@ -138,8 +138,7 @@ public abstract class BookmarkInputHandlerMixin {
     private static RecipeBookmark<?, ?> jeiPlusPlus$createBookmarkForHoveredOutput(
             IRecipeLayoutDrawable<?> layout,
             ITypedIngredient<?> hoveredOutput,
-            RecipeBookmark<?, ?> templateBookmark
-    ) {
+            RecipeBookmark<?, ?> templateBookmark) {
         IRecipeCategory category = layout.getRecipeCategory();
         Object recipe = layout.getRecipe();
         ResourceLocation recipeUid = category.getRegistryName(recipe);
@@ -155,8 +154,8 @@ public abstract class BookmarkInputHandlerMixin {
             return null;
         }
 
-        RecipeTransferService recipeTransferService =
-                ((RecipeBookmarkElementAccessor) element).jeiPlusPlus$getRecipeTransferService();
+        RecipeTransferService recipeTransferService = ((RecipeBookmarkElementAccessor) element)
+                .jeiPlusPlus$getRecipeTransferService();
 
         return new RecipeBookmark(
                 category,
@@ -164,8 +163,7 @@ public abstract class BookmarkInputHandlerMixin {
                 recipeUid,
                 normalized,
                 RecipeIngredientRole.OUTPUT,
-                recipeTransferService
-        );
+                recipeTransferService);
     }
 
     /** Uses JEI 15.62's own mapping from the BOOKMARKED stage to its config. */
@@ -173,8 +171,7 @@ public abstract class BookmarkInputHandlerMixin {
     private static boolean jeiPlusPlus$isBookmarkedRecipeSortingEnabled() {
         try {
             return RecipeSorterStage.BOOKMARKED.isEnabled(
-                    Internal.getClientConfigs().getClientConfig()
-            );
+                    Internal.getClientConfigs().getClientConfig());
         } catch (RuntimeException ignored) {
             // Fail closed: normal ingredient bookmarks are safer if JEI's
             // client config is temporarily unavailable.

@@ -22,12 +22,14 @@ import java.util.Set;
 /**
  * Optional integrations for network-backed crafting terminals.
  *
- * <p>Normal crafting slots and result slots are deliberately left to JEI's
- * normal container-click transfer path.  RS and Beyond Dimensions use fake
+ * <p>
+ * Normal crafting slots and result slots are deliberately left to JEI's
+ * normal container-click transfer path. RS and Beyond Dimensions use fake
  * storage slots, however, so a vanilla click cannot extract an item from the
- * network.  For those menus this class calls the mod's own client API/packet
- * only for the recipe-transfer operation.  Every reference is reflective so
- * JEI++ remains a client-only, optional integration.</p>
+ * network. For those menus this class calls the mod's own client API/packet
+ * only for the recipe-transfer operation. Every reference is reflective so
+ * JEI++ remains a client-only, optional integration.
+ * </p>
  */
 final class StorageNetworkIntegration {
     private static final long CACHE_FALLBACK_NANOS = 50_000_000L;
@@ -35,22 +37,14 @@ final class StorageNetworkIntegration {
     private static final String RS2_MENU = "com.refinedmods.refinedstorage.common.grid.AbstractCraftingGridContainerMenu";
     private static final String RS1_SCREEN = "com.refinedmods.refinedstorage.screen.grid.GridScreen";
     private static final String BD_MENU = "com.wintercogs.beyonddimensions.common.menu.DimensionsCraftMenu";
-    private static final String BBD_MENU_ACCESS =
-        "net.xuwu.betterbeyonddimensions.common.NetworkStorageMenuAccess";
-    private static final String BBD_NETWORK_SLOT =
-        "net.xuwu.betterbeyonddimensions.common.NetworkStorageSlot";
-    private static final String BBD_CLIENT_STORAGE_STATE =
-        "net.xuwu.betterbeyonddimensions.client.ClientStorageState";
-    private static final String BBD_RECIPE_FILL =
-        "net.xuwu.betterbeyonddimensions.common.RecipeFill";
-    private static final String BBD_NETWORK_HANDLER =
-        "net.xuwu.betterbeyonddimensions.NetworkHandler";
-    private static final String BBD_SIDEBAR_RENDERER =
-        "net.xuwu.betterbeyonddimensions.client.SidebarRenderer";
-    private static final String IT_MENU =
-        "org.cyclops.integratedterminals.inventory.container.ContainerTerminalStorageBase";
-    private static final String IT_SCREEN =
-        "org.cyclops.integratedterminals.client.gui.container.ContainerScreenTerminalStorage";
+    private static final String BBD_MENU_ACCESS = "net.xuwu.betterbeyonddimensions.common.NetworkStorageMenuAccess";
+    private static final String BBD_NETWORK_SLOT = "net.xuwu.betterbeyonddimensions.common.NetworkStorageSlot";
+    private static final String BBD_CLIENT_STORAGE_STATE = "net.xuwu.betterbeyonddimensions.client.ClientStorageState";
+    private static final String BBD_RECIPE_FILL = "net.xuwu.betterbeyonddimensions.common.RecipeFill";
+    private static final String BBD_NETWORK_HANDLER = "net.xuwu.betterbeyonddimensions.NetworkHandler";
+    private static final String BBD_SIDEBAR_RENDERER = "net.xuwu.betterbeyonddimensions.client.SidebarRenderer";
+    private static final String IT_MENU = "org.cyclops.integratedterminals.inventory.container.ContainerTerminalStorageBase";
+    private static final String IT_SCREEN = "org.cyclops.integratedterminals.client.gui.container.ContainerScreenTerminalStorage";
 
     private static volatile Object cachedMenu;
     private static volatile long cachedGameTime = Long.MIN_VALUE;
@@ -97,9 +91,9 @@ final class StorageNetworkIntegration {
         long gameTime = minecraft.level == null ? -1L : minecraft.level.getGameTime();
         long cacheAge = now - cachedAtNanos;
         if (menu == cachedMenu
-            && gameTime == cachedGameTime
-            && cacheAge >= 0L
-            && cacheAge < CACHE_FALLBACK_NANOS) {
+                && gameTime == cachedGameTime
+                && cacheAge >= 0L
+                && cacheAge < CACHE_FALLBACK_NANOS) {
             return cachedStacks;
         }
 
@@ -108,7 +102,7 @@ final class StorageNetworkIntegration {
         boolean betterBeyondMenu = isBetterBeyondMenu(menu);
         boolean integratedMenu = isIntegratedTerminalMenu(menu);
         boolean ae2CraftingMenu = !refinedMenu && !beyondMenu && !betterBeyondMenu && !integratedMenu
-            && Ae2StorageIntegration.isCraftingMenu(menu);
+                && Ae2StorageIntegration.isCraftingMenu(menu);
         // Do not probe AE2's reflective repository for a terminal that is
         // known to belong to another storage mod. The old order paid the
         // AE2 class/method lookup cost on every 50ms refresh of RS/Beyond/IT.
@@ -140,7 +134,7 @@ final class StorageNetworkIntegration {
                 } else {
                     BetterBeyondSnapshot betterBeyond = betterBeyondSnapshot(menu);
                     if (!betterBeyond.stacks().isEmpty() || !betterBeyond.fluids().isEmpty()
-                        || betterBeyondMenu) {
+                            || betterBeyondMenu) {
                         result = betterBeyond.stacks();
                         fluidResult = betterBeyond.fluids();
                     } else {
@@ -152,8 +146,8 @@ final class StorageNetworkIntegration {
         }
         fluidResult = mergeFluids(fluidResult);
         boolean snapshotChanged = menu != cachedMenu
-            || !sameSnapshot(cachedStacks, result)
-            || !sameFluidSnapshot(cachedFluids, fluidResult);
+                || !sameSnapshot(cachedStacks, result)
+                || !sameFluidSnapshot(cachedFluids, fluidResult);
         cachedMenu = menu;
         cachedGameTime = gameTime;
         cachedAtNanos = now;
@@ -195,10 +189,10 @@ final class StorageNetworkIntegration {
 
     private static boolean sameSnapshot(List<StoredStack> previous, List<StoredStack> next) {
         // The terminal integrations are allowed to reorder their view lists
-        // when JEI++ moves highlighted entries to the front.  Comparing by
+        // when JEI++ moves highlighted entries to the front. Comparing by
         // list position made that purely visual reorder look like a storage
         // update, which bumped the snapshot revision and caused the next
-        // refresh to undo/reapply sorting repeatedly.  Compare the actual
+        // refresh to undo/reapply sorting repeatedly. Compare the actual
         // inventory contents instead of the current UI order.
         return stackAmounts(previous).equals(stackAmounts(next));
     }
@@ -246,8 +240,8 @@ final class StorageNetworkIntegration {
             }
         }
         return amounts.entrySet().stream()
-            .map(entry -> new StoredFluid(entry.getKey(), entry.getValue()))
-            .toList();
+                .map(entry -> new StoredFluid(entry.getKey(), entry.getValue()))
+                .toList();
     }
 
     private static long safeAdd(long left, long right) {
@@ -285,9 +279,9 @@ final class StorageNetworkIntegration {
             prioritizedSnapshotRevision = Long.MIN_VALUE;
             return;
         }
-        // Do not use the snapshot revision as a blanket early-out here.  A
+        // Do not use the snapshot revision as a blanket early-out here. A
         // terminal's own quantity/name sort can reorder the same resources
-        // without changing their contents.  Each integration below checks
+        // without changing their contents. Each integration below checks
         // whether its visible list is already highlighted-first and reapplies
         // the stable partition only when the UI order actually needs repair.
         try {
@@ -314,10 +308,9 @@ final class StorageNetworkIntegration {
      * allowing the caller to fall back to JEI's generic transfer handler.
      */
     static Boolean tryFillCraftingGrid(
-        AbstractContainerMenu menu,
-        List<ItemStack> templates,
-        boolean send
-    ) {
+            AbstractContainerMenu menu,
+            List<ItemStack> templates,
+            boolean send) {
         Boolean ae2 = Ae2StorageIntegration.tryFillCraftingGrid(menu, templates, send);
         if (ae2 != null) {
             return ae2;
@@ -373,7 +366,8 @@ final class StorageNetworkIntegration {
                 }
                 for (int index = 0; index < 9; index++) {
                     actual.add(stackOf(menu instanceof AbstractContainerMenu container
-                        ? container.getSlot(slots.get(index)).getItem() : null));
+                            ? container.getSlot(slots.get(index)).getItem()
+                            : null));
                 }
             } else if (isIntegratedTerminalMenu(menu)) {
                 Object commonTab = integratedSelectedCommonTab(menu);
@@ -393,7 +387,7 @@ final class StorageNetworkIntegration {
                         return false;
                     }
                 } else if (present.isEmpty()
-                    || !RecipeTreeData.ingredientKey(expected).equals(RecipeTreeData.ingredientKey(present))) {
+                        || !RecipeTreeData.ingredientKey(expected).equals(RecipeTreeData.ingredientKey(present))) {
                     return false;
                 }
             }
@@ -411,8 +405,8 @@ final class StorageNetworkIntegration {
         for (int i = 0; i < menu.slots.size(); i++) {
             String name = menu.getSlot(i).getClass().getName();
             if (name.endsWith("ResultCraftingGridSlot")
-                || name.endsWith("CraftingGridResultSlot")
-                || name.endsWith("AutoRefillResultSlot")) {
+                    || name.endsWith("CraftingGridResultSlot")
+                    || name.endsWith("AutoRefillResultSlot")) {
                 return i;
             }
         }
@@ -450,19 +444,18 @@ final class StorageNetworkIntegration {
         }
         Minecraft minecraft = Minecraft.getInstance();
         if (!(menu instanceof AbstractContainerMenu container)
-            || minecraft.player == null
-            || minecraft.gameMode == null
-            || resultSlot < 0
-            || resultSlot >= container.slots.size()) {
+                || minecraft.player == null
+                || minecraft.gameMode == null
+                || resultSlot < 0
+                || resultSlot >= container.slots.size()) {
             return false;
         }
         minecraft.gameMode.handleInventoryMouseClick(
-            container.containerId,
-            resultSlot,
-            0,
-            ClickType.PICKUP,
-            minecraft.player
-        );
+                container.containerId,
+                resultSlot,
+                0,
+                ClickType.PICKUP,
+                minecraft.player);
         return true;
     }
 
@@ -475,12 +468,12 @@ final class StorageNetworkIntegration {
         try {
             if (isRs1Menu(menu)) {
                 Class<?> messageType = Class.forName(
-                    "com.refinedmods.refinedstorage.network.grid.GridItemInsertHeldMessage"
-                );
+                        "com.refinedmods.refinedstorage.network.grid.GridItemInsertHeldMessage");
                 Object message = constructor(messageType, boolean.class).newInstance(single);
                 Class<?> rsType = Class.forName("com.refinedmods.refinedstorage.RS");
                 Object handler = readStaticField(rsType, "NETWORK_HANDLER");
-                Method sender = findCompatibleMethod(handler == null ? null : handler.getClass(), "sendToServer", messageType);
+                Method sender = findCompatibleMethod(handler == null ? null : handler.getClass(), "sendToServer",
+                        messageType);
                 if (handler != null && sender != null) {
                     sender.invoke(handler, message);
                     return true;
@@ -489,16 +482,13 @@ final class StorageNetworkIntegration {
             }
             if (isRs2Menu(menu)) {
                 Class<?> modeType = Class.forName(
-                    "com.refinedmods.refinedstorage.api.network.node.grid.GridInsertMode"
-                );
+                        "com.refinedmods.refinedstorage.api.network.node.grid.GridInsertMode");
                 @SuppressWarnings({"rawtypes", "unchecked"})
                 Object mode = Enum.valueOf(
-                    (Class<? extends Enum>) modeType.asSubclass(Enum.class),
-                    single ? "SINGLE_RESOURCE" : "ENTIRE_RESOURCE"
-                );
+                        (Class<? extends Enum>) modeType.asSubclass(Enum.class),
+                        single ? "SINGLE_RESOURCE" : "ENTIRE_RESOURCE");
                 Class<?> packets = Class.forName(
-                    "com.refinedmods.refinedstorage.common.support.packet.c2s.C2SPackets"
-                );
+                        "com.refinedmods.refinedstorage.common.support.packet.c2s.C2SPackets");
                 Method sender = findCompatibleMethod(packets, "sendGridInsert", modeType, boolean.class);
                 if (sender != null) {
                     sender.invoke(null, mode, true);
@@ -533,15 +523,13 @@ final class StorageNetworkIntegration {
             }
             Object clickItem = invokeNoArg(target, "getVanillaActualStack");
             Class<?> packetType = Class.forName(
-                "com.wintercogs.beyonddimensions.network.packet.c2s.CallSeverClickPacket"
-            );
+                    "com.wintercogs.beyonddimensions.network.packet.c2s.CallSeverClickPacket");
             Constructor<?> packetConstructor = constructor(
-                packetType,
-                int.class,
-                clickItem == null ? Object.class : clickItem.getClass(),
-                int.class,
-                boolean.class
-            );
+                    packetType,
+                    int.class,
+                    clickItem == null ? Object.class : clickItem.getClass(),
+                    int.class,
+                    boolean.class);
             if (packetConstructor == null) {
                 return false;
             }
@@ -551,9 +539,8 @@ final class StorageNetworkIntegration {
             }
             Object packet = packetConstructor.newInstance(index, clickItem, 0, false);
             for (String distributorName : List.of(
-                "net.neoforged.neoforge.network.PacketDistributor",
-                "net.minecraftforge.network.PacketDistributor"
-            )) {
+                    "net.neoforged.neoforge.network.PacketDistributor",
+                    "net.minecraftforge.network.PacketDistributor")) {
                 try {
                     Class<?> distributor = Class.forName(distributorName);
                     Method sender = findCompatibleMethod(distributor, "sendToServer", packetType);
@@ -580,17 +567,16 @@ final class StorageNetworkIntegration {
             }
             int channel = intValue(invokeNoArg(menu, "getSelectedChannel"));
             Method click = findCompatibleMethod(
-                tab.getClass(),
-                "handleClick",
-                AbstractContainerMenu.class,
-                int.class,
-                int.class,
-                int.class,
-                boolean.class,
-                boolean.class,
-                int.class,
-                boolean.class
-            );
+                    tab.getClass(),
+                    "handleClick",
+                    AbstractContainerMenu.class,
+                    int.class,
+                    int.class,
+                    int.class,
+                    boolean.class,
+                    boolean.class,
+                    int.class,
+                    boolean.class);
             if (click == null) {
                 return false;
             }
@@ -603,10 +589,10 @@ final class StorageNetworkIntegration {
 
     static boolean isCraftingMenu(Object menu) {
         return Ae2StorageIntegration.isCraftingMenu(menu)
-            || isRs1Menu(menu)
-            || isRs2Menu(menu)
-            || isBeyondMenu(menu)
-            || isIntegratedTerminalMenu(menu);
+                || isRs1Menu(menu)
+                || isRs2Menu(menu)
+                || isBeyondMenu(menu)
+                || isIntegratedTerminalMenu(menu);
     }
 
     /** Reads RS 1.x/2.x item and fluid views in one pass when they share a list. */
@@ -861,8 +847,7 @@ final class StorageNetworkIntegration {
         }
         try {
             Class<?> messageType = Class.forName(
-                "com.refinedmods.refinedstorage.network.grid.GridTransferMessage"
-            );
+                    "com.refinedmods.refinedstorage.network.grid.GridTransferMessage");
             List<List<ItemStack>> inputs = new ArrayList<>(9);
             for (int i = 0; i < 9; i++) {
                 ItemStack stack = templates.get(i);
@@ -905,8 +890,7 @@ final class StorageNetworkIntegration {
         }
         try {
             Class<?> itemResourceType = Class.forName(
-                "com.refinedmods.refinedstorage.common.support.resource.ItemResource"
-            );
+                    "com.refinedmods.refinedstorage.common.support.resource.ItemResource");
             Method ofStack = findCompatibleMethod(itemResourceType, "ofItemStack", ItemStack.class);
             if (ofStack == null) {
                 return false;
@@ -920,8 +904,7 @@ final class StorageNetworkIntegration {
                 }
             }
             Class<?> packets = Class.forName(
-                "com.refinedmods.refinedstorage.common.support.packet.c2s.C2SPackets"
-            );
+                    "com.refinedmods.refinedstorage.common.support.packet.c2s.C2SPackets");
             Method sender = findCompatibleMethod(packets, "sendCraftingGridRecipeTransfer", List.class);
             if (sender == null) {
                 return false;
@@ -942,8 +925,7 @@ final class StorageNetworkIntegration {
         }
         try {
             Class<?> keyType = Class.forName(
-                "com.wintercogs.beyonddimensions.api.storage.key.impl.ItemStackKey"
-            );
+                    "com.wintercogs.beyonddimensions.api.storage.key.impl.ItemStackKey");
             Field emptyField = findField(keyType, "EMPTY");
             Object empty = emptyField == null ? null : emptyField.get(null);
             Constructor<?> keyConstructor = constructor(keyType, ItemStack.class);
@@ -959,13 +941,11 @@ final class StorageNetworkIntegration {
                 }
             }
             Class<?> packetType = Class.forName(
-                "com.wintercogs.beyonddimensions.network.packet.c2s.RecipeFillC2SPacket"
-            );
+                    "com.wintercogs.beyonddimensions.network.packet.c2s.RecipeFillC2SPacket");
             Object packet = constructor(packetType, List.class, List.class).newInstance(keys, amounts);
             for (String distributorName : List.of(
-                "net.neoforged.neoforge.network.PacketDistributor",
-                "net.minecraftforge.network.PacketDistributor"
-            )) {
+                    "net.neoforged.neoforge.network.PacketDistributor",
+                    "net.minecraftforge.network.PacketDistributor")) {
                 try {
                     Class<?> distributor = Class.forName(distributorName);
                     Method sendToServer = findCompatibleMethod(distributor, "sendToServer", packetType);
@@ -1003,8 +983,7 @@ final class StorageNetworkIntegration {
                 // the extended form when a build removes the compatibility
                 // overload in the future.
                 fillRecipe = findCompatibleMethod(
-                    handlerType, "fillRecipe", List.class, boolean.class, boolean.class
-                );
+                        handlerType, "fillRecipe", List.class, boolean.class, boolean.class);
                 extendedFill = fillRecipe != null;
             }
             if (fillRecipe == null) {
@@ -1014,7 +993,8 @@ final class StorageNetworkIntegration {
                 List<Object> fills = new ArrayList<>(9);
                 for (int index = 0; index < 9; index++) {
                     ItemStack stack = templates.get(index) == null
-                        ? ItemStack.EMPTY : templates.get(index).copy();
+                            ? ItemStack.EMPTY
+                            : templates.get(index).copy();
                     int amount = stack.isEmpty() ? 0 : Math.max(1, stack.getCount());
                     if (amount > 0) {
                         stack.setCount(1);
@@ -1041,7 +1021,7 @@ final class StorageNetworkIntegration {
         for (int index = 0; index < container.slots.size(); index++) {
             Slot slot = container.getSlot(index);
             if (slot.container != null
-                && slot.container.getClass().getName().endsWith("CraftingContainer")) {
+                    && slot.container.getClass().getName().endsWith("CraftingContainer")) {
                 result.add(index);
             }
         }
@@ -1080,21 +1060,20 @@ final class StorageNetworkIntegration {
     }
 
     private static List<StoredFluid> collectFluidEntries(Object entries, String amountMethod)
-        throws ReflectiveOperationException {
+            throws ReflectiveOperationException {
         return collectFluidEntries(entries, amountMethod, null);
     }
 
     /**
-     * Collects fluid resources from a virtual grid.  RS 2.x keeps the amount
+     * Collects fluid resources from a virtual grid. RS 2.x keeps the amount
      * on {@code GridResource#getAmount(ResourceRepository)} rather than on
      * the resource entry itself, so the optional context is passed through
      * reflectively when that API is present.
      */
     private static List<StoredFluid> collectFluidEntries(
-        Object entries,
-        String amountMethod,
-        Object amountContext
-    ) throws ReflectiveOperationException {
+            Object entries,
+            String amountMethod,
+            Object amountContext) throws ReflectiveOperationException {
         if (!(entries instanceof Iterable<?> iterable)) {
             return List.of();
         }
@@ -1109,7 +1088,7 @@ final class StorageNetworkIntegration {
     }
 
     private static StoredFluid fluidEntry(Object entry, String amountMethod, Object amountContext)
-        throws ReflectiveOperationException {
+            throws ReflectiveOperationException {
         if (entry == null || invokeNoArg(entry, "getCraftingOption") != null) {
             return null;
         }
@@ -1163,8 +1142,7 @@ final class StorageNetworkIntegration {
         Object view = invokeNoArg(repository, "getViewList");
         if (view instanceof List<?> list) {
             Comparator<Object> comparator = Comparator.comparing(
-                entry -> !isHighlightedResource(entry, repository, keys)
-            );
+                    entry -> !isHighlightedResource(entry, repository, keys));
             if (isPrioritized(list, entry -> isHighlightedResource(entry, repository, keys))) {
                 return;
             }
@@ -1184,7 +1162,7 @@ final class StorageNetworkIntegration {
                 return;
             }
             sortExposedOrBackingList(view, list,
-                Comparator.comparing(entry -> !isHighlightedGridStack(entry, keys)));
+                    Comparator.comparing(entry -> !isHighlightedGridStack(entry, keys)));
         }
     }
 
@@ -1202,12 +1180,11 @@ final class StorageNetworkIntegration {
         Object reverseState = readStaticField(settings, "uiReverseButton");
         boolean reverse = reverseState != null && "ENABLED".equals(reverseState.toString());
         Method builder = findCompatibleMethod(
-            clientStorage.getClass(),
-            "buildSortedIndex",
-            primary == null ? null : primary.getClass(),
-            secondary == null ? null : secondary.getClass(),
-            boolean.class
-        );
+                clientStorage.getClass(),
+                "buildSortedIndex",
+                primary == null ? null : primary.getClass(),
+                secondary == null ? null : secondary.getClass(),
+                boolean.class);
         if (builder == null) {
             return;
         }
@@ -1237,12 +1214,12 @@ final class StorageNetworkIntegration {
 
     /**
      * Better Beyond Dimensions rebuilds its sidebar from a private client view
-     * that already applies the mod's configured sort.  Keep that order as the
+     * that already applies the mod's configured sort. Keep that order as the
      * base list and replace only the final visible order with a stable
      * highlighted-first partition.
      */
     private static void prioritizeBetterBeyond(Object menu, Set<String> keys)
-        throws ReflectiveOperationException {
+            throws ReflectiveOperationException {
         if (!isBetterBeyondMenu(menu)) {
             prioritizedBetterBeyondView = null;
             betterBeyondNativeEntries = List.of();
@@ -1264,7 +1241,7 @@ final class StorageNetworkIntegration {
         }
         Class<?> stateType = Class.forName(BBD_CLIENT_STORAGE_STATE);
         if (!Boolean.TRUE.equals(invokeStaticNoArg(stateType, "available"))
-            || Boolean.TRUE.equals(invokeStaticNoArg(stateType, "isSidebarHidden"))) {
+                || Boolean.TRUE.equals(invokeStaticNoArg(stateType, "isSidebarHidden"))) {
             return;
         }
         Object snapshot = invokeStaticNoArg(stateType, "snapshot");
@@ -1275,11 +1252,10 @@ final class StorageNetworkIntegration {
         }
 
         Method entriesMethod = findCompatibleMethod(
-            storageView.getClass(),
-            "entries",
-            snapshot.getClass(),
-            String.class
-        );
+                storageView.getClass(),
+                "entries",
+                snapshot.getClass(),
+                String.class);
         if (entriesMethod == null) {
             return;
         }
@@ -1334,14 +1310,13 @@ final class StorageNetworkIntegration {
                 return;
             }
             sortExposedOrBackingList(views, list,
-                Comparator.comparing(entry -> !isHighlightedIntegratedEntry(entry, keys)));
+                    Comparator.comparing(entry -> !isHighlightedIntegratedEntry(entry, keys)));
         }
     }
 
     static void renderVirtualStorageHighlights(
-        GuiGraphics graphics,
-        AbstractContainerScreen<?> screen
-    ) {
+            GuiGraphics graphics,
+            AbstractContainerScreen<?> screen) {
         if (graphics == null || screen == null || !RecipeTreeFavorites.isActive()) {
             return;
         }
@@ -1358,7 +1333,7 @@ final class StorageNetworkIntegration {
                 renderRs2Highlights(graphics, screen);
             }
             if (Ae2StorageIntegration.isCraftingMenu(menu)
-                || classOrSuper(screen.getClass(), "appeng.client.gui.me.common.MEStorageScreen")) {
+                    || classOrSuper(screen.getClass(), "appeng.client.gui.me.common.MEStorageScreen")) {
                 renderAe2Highlights(graphics, screen);
             }
             if (isBeyondMenu(menu)) {
@@ -1376,9 +1351,8 @@ final class StorageNetworkIntegration {
      * though CyclopsCore renders tooltips with depth testing disabled.
      */
     static void renderIntegratedTerminalHighlightsBeforeTooltip(
-        GuiGraphics graphics,
-        AbstractContainerScreen<?> screen
-    ) {
+            GuiGraphics graphics,
+            AbstractContainerScreen<?> screen) {
         if (graphics == null || screen == null || !RecipeTreeFavorites.isActive()) {
             return;
         }
@@ -1393,7 +1367,7 @@ final class StorageNetworkIntegration {
     }
 
     private static void renderRs1Highlights(GuiGraphics graphics, AbstractContainerScreen<?> screen)
-        throws ReflectiveOperationException {
+            throws ReflectiveOperationException {
         Object view = invokeNoArg(screen, "getView");
         Object entries = invokeNoArg(view, "getStacks");
         if (!(entries instanceof List<?> list)) {
@@ -1409,19 +1383,19 @@ final class StorageNetworkIntegration {
             drawHighlight(graphics, x, y, stack);
             if (stack.isEmpty()) {
                 FluidRecipeCompat.describeFluid(list.get(start + local))
-                    .ifPresent(info -> drawHighlightKey(graphics, x, y, info.key()));
+                        .ifPresent(info -> drawHighlightKey(graphics, x, y, info.key()));
             }
         }
     }
 
     /**
-     * RS 2.x renders virtual resources instead of vanilla slots.  Its grid
+     * RS 2.x renders virtual resources instead of vanilla slots. Its grid
      * uses the same 18-pixel cell geometry as RS 1.x, but keeps scrolling and
-     * pinned-row state on the screen.  Read those values reflectively so the
+     * pinned-row state on the screen. Read those values reflectively so the
      * highlight follows the resource even when RS changes its screen class.
      */
     private static void renderRs2Highlights(GuiGraphics graphics, AbstractContainerScreen<?> screen)
-        throws ReflectiveOperationException {
+            throws ReflectiveOperationException {
         Object repository = invokeNoArg(screen.getMenu(), "getRepository");
         Object entries = invokeNoArg(repository, "getViewList");
         if (!(entries instanceof List<?> list)) {
@@ -1450,13 +1424,13 @@ final class StorageNetworkIntegration {
             drawHighlight(graphics, x, y, stack);
             if (stack.isEmpty()) {
                 FluidRecipeCompat.describeFluid(entry)
-                    .ifPresent(info -> drawHighlightKey(graphics, x, y, info.key()));
+                        .ifPresent(info -> drawHighlightKey(graphics, x, y, info.key()));
             }
         }
     }
 
     private static void renderAe2Highlights(GuiGraphics graphics, AbstractContainerScreen<?> screen)
-        throws ReflectiveOperationException {
+            throws ReflectiveOperationException {
         for (Slot slot : screen.getMenu().slots) {
             if (!slot.getClass().getName().endsWith("RepoSlot")) {
                 continue;
@@ -1470,13 +1444,13 @@ final class StorageNetworkIntegration {
                 drawHighlight(graphics, x, y, stack);
             } else {
                 FluidRecipeCompat.describeFluid(key)
-                    .ifPresent(info -> drawHighlightKey(graphics, x, y, info.key()));
+                        .ifPresent(info -> drawHighlightKey(graphics, x, y, info.key()));
             }
         }
     }
 
     private static void renderBeyondHighlights(GuiGraphics graphics, AbstractContainerScreen<?> screen)
-        throws ReflectiveOperationException {
+            throws ReflectiveOperationException {
         for (Slot slot : screen.getMenu().slots) {
             if (!slot.getClass().getName().contains("StackTypedSlot")) {
                 continue;
@@ -1487,38 +1461,35 @@ final class StorageNetworkIntegration {
                 key = invokeNoArg(typed, "getKey");
             }
             FluidRecipeCompat.describeFluid(key)
-                .ifPresent(info -> drawHighlightKey(
-                    graphics,
-                    screen.getGuiLeft() + slot.x,
-                    screen.getGuiTop() + slot.y,
-                    info.key()
-                ));
+                    .ifPresent(info -> drawHighlightKey(
+                            graphics,
+                            screen.getGuiLeft() + slot.x,
+                            screen.getGuiTop() + slot.y,
+                            info.key()));
         }
     }
 
     /** Draws recipe-tree overlays on Better Beyond Dimensions' virtual sidebar slots. */
     static void renderBetterBeyondHighlights(
-        GuiGraphics graphics,
-        AbstractContainerScreen<?> screen
-    ) {
+            GuiGraphics graphics,
+            AbstractContainerScreen<?> screen) {
         if (graphics == null || screen == null || !RecipeTreeFavorites.isActive()
-            || !isBetterBeyondMenu(screen.getMenu())
-            || !isBetterBeyondSidebarEnabled(screen)) {
+                || !isBetterBeyondMenu(screen.getMenu())
+                || !isBetterBeyondSidebarEnabled(screen)) {
             return;
         }
         try {
             for (Slot slot : screen.getMenu().slots) {
                 if (slot == null
-                    || !BBD_NETWORK_SLOT.equals(slot.getClass().getName())
-                    || !slot.hasItem()) {
+                        || !BBD_NETWORK_SLOT.equals(slot.getClass().getName())
+                        || !slot.hasItem()) {
                     continue;
                 }
                 drawHighlight(
-                    graphics,
-                    screen.getGuiLeft() + slot.x,
-                    screen.getGuiTop() + slot.y,
-                    slot.getItem()
-                );
+                        graphics,
+                        screen.getGuiLeft() + slot.x,
+                        screen.getGuiTop() + slot.y,
+                        slot.getItem());
             }
         } catch (RuntimeException | LinkageError ignored) {
             // The optional sidebar must never make a container render fatal.
@@ -1526,7 +1497,7 @@ final class StorageNetworkIntegration {
     }
 
     private static void renderIntegratedHighlights(GuiGraphics graphics, AbstractContainerScreen<?> screen)
-        throws ReflectiveOperationException {
+            throws ReflectiveOperationException {
         Object menu = screen.getMenu();
         Object tab = integratedItemClientTab(menu);
         if (tab == null) {
@@ -1557,21 +1528,19 @@ final class StorageNetworkIntegration {
                 // renderer runs inside renderLabels, whose pose is already
                 // translated by the container's GUI origin.
                 drawHighlight(
-                    graphics,
-                    rect.getX() - screen.getGuiLeft() - 1,
-                    rect.getY() - screen.getGuiTop() - 1,
-                    stack,
-                    200
-                );
+                        graphics,
+                        rect.getX() - screen.getGuiLeft() - 1,
+                        rect.getY() - screen.getGuiTop() - 1,
+                        stack,
+                        200);
                 if (stack.isEmpty()) {
                     FluidRecipeCompat.describeFluid(instance)
-                        .ifPresent(info -> drawHighlightKey(
-                            graphics,
-                            rect.getX() - screen.getGuiLeft() - 1,
-                            rect.getY() - screen.getGuiTop() - 1,
-                            info.key(),
-                            200
-                        ));
+                            .ifPresent(info -> drawHighlightKey(
+                                    graphics,
+                                    rect.getX() - screen.getGuiLeft() - 1,
+                                    rect.getY() - screen.getGuiTop() - 1,
+                                    info.key(),
+                                    200));
                 }
             }
         }
@@ -1610,13 +1579,13 @@ final class StorageNetworkIntegration {
         if (stack != null && !stack.isEmpty()) {
             String key = RecipeTreeData.ingredientKey(stack);
             boolean direct = RecipeTreeFavorites.isFinalProductKey(key)
-                || RecipeTreeFavorites.isIntermediateKey(key)
-                || RecipeTreeFavorites.isRequiredKey(key);
+                    || RecipeTreeFavorites.isIntermediateKey(key)
+                    || RecipeTreeFavorites.isRequiredKey(key);
             if (direct) {
                 drawHighlightKey(graphics, x, y, key, z);
             } else {
                 FluidRecipeCompat.displayFluidKey(stack)
-                    .ifPresent(fluidKey -> drawHighlightKey(graphics, x, y, fluidKey, z));
+                        .ifPresent(fluidKey -> drawHighlightKey(graphics, x, y, fluidKey, z));
             }
         }
     }
@@ -1651,8 +1620,8 @@ final class StorageNetworkIntegration {
                 return matchesHighlightKey(stack, keys);
             }
             return FluidRecipeCompat.describeFluid(entry)
-                .map(info -> keys.contains(info.key()))
-                .orElse(false);
+                    .map(info -> keys.contains(info.key()))
+                    .orElse(false);
         } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
             return false;
         }
@@ -1678,8 +1647,8 @@ final class StorageNetworkIntegration {
                 return matchesHighlightKey(stack, keys);
             }
             return FluidRecipeCompat.describeFluid(entry)
-                .map(info -> keys.contains(info.key()))
-                .orElse(false);
+                    .map(info -> keys.contains(info.key()))
+                    .orElse(false);
         } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
             return false;
         }
@@ -1709,8 +1678,8 @@ final class StorageNetworkIntegration {
                 return matchesHighlightKey(stack, keys);
             }
             return FluidRecipeCompat.describeFluid(instance)
-                .map(info -> keys.contains(info.key()))
-                .orElse(false);
+                    .map(info -> keys.contains(info.key()))
+                    .orElse(false);
         } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
             return false;
         }
@@ -1719,8 +1688,8 @@ final class StorageNetworkIntegration {
     private static Object integratedSelectedCommonTab(Object menu) throws ReflectiveOperationException {
         Object selected = invokeNoArg(menu, "getSelectedTab");
         return selected instanceof String id
-            ? invoke(menu, "getTabCommon", String.class, id)
-            : null;
+                ? invoke(menu, "getTabCommon", String.class, id)
+                : null;
     }
 
     private static Object integratedItemClientTab(Object menu) throws ReflectiveOperationException {
@@ -1836,8 +1805,8 @@ final class StorageNetworkIntegration {
                 return matchesHighlightKey(stack, keys);
             }
             return FluidRecipeCompat.describeFluid(resource)
-                .map(info -> keys.contains(info.key()))
-                .orElse(false);
+                    .map(info -> keys.contains(info.key()))
+                    .orElse(false);
         } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
             return false;
         }
@@ -1846,18 +1815,17 @@ final class StorageNetworkIntegration {
     static boolean matchesHighlightKey(ItemStack stack, Set<String> keys) {
         String key = RecipeTreeData.ingredientKey(stack);
         return keys.contains(key)
-            || FluidRecipeCompat.displayFluidKey(stack).map(keys::contains).orElse(false);
+                || FluidRecipeCompat.displayFluidKey(stack).map(keys::contains).orElse(false);
     }
 
     /**
      * Returns whether a list is already partitioned with all highlighted
-     * entries before every non-highlighted entry.  The original order inside
+     * entries before every non-highlighted entry. The original order inside
      * each partition is intentionally preserved by the stable sort.
      */
     private static boolean isPrioritized(
-        List<?> list,
-        java.util.function.Predicate<Object> highlighted
-    ) {
+            List<?> list,
+            java.util.function.Predicate<Object> highlighted) {
         boolean seenUnhighlighted = false;
         for (Object entry : list) {
             if (highlighted.test(entry)) {
@@ -1886,22 +1854,21 @@ final class StorageNetworkIntegration {
     /**
      * RS2 and some optional integrations expose an unmodifiable view list.
      * In those versions the actual mutable list is held by a small private
-     * view-state object.  Sort that backing list without calling the mod's
+     * view-state object. Sort that backing list without calling the mod's
      * native sort routine (which would discard the recipe-tree priority).
      */
     @SuppressWarnings("unchecked")
     private static void sortExposedOrBackingList(
-        Object owner,
-        List<?> exposed,
-        Comparator<Object> comparator
-    ) throws ReflectiveOperationException {
+            Object owner,
+            List<?> exposed,
+            Comparator<Object> comparator) throws ReflectiveOperationException {
         try {
             ((List<Object>) exposed).sort(comparator);
             return;
         } catch (UnsupportedOperationException | IllegalArgumentException ignored) {
             // Fall through to the private backing list.
         }
-        // Integrated Terminals keeps one list per channel.  A channel view can
+        // Integrated Terminals keeps one list per channel. A channel view can
         // be immutable even though the outer list is mutable; replace only the
         // matching channel with a sorted copy in that case.
         if (owner instanceof List<?> outer) {
@@ -1928,7 +1895,7 @@ final class StorageNetworkIntegration {
 
     @SuppressWarnings("unchecked")
     private static List<Object> findBackingList(Object owner, List<?> exposed, int depth)
-        throws ReflectiveOperationException {
+            throws ReflectiveOperationException {
         if (owner == null || depth > 2) {
             return null;
         }
@@ -1957,7 +1924,7 @@ final class StorageNetworkIntegration {
                         }
                     }
                     if (depth < 2 && value != null
-                        && !value.getClass().getName().startsWith("java.")) {
+                            && !value.getClass().getName().startsWith("java.")) {
                         List<Object> nested = findBackingList(value, exposed, depth + 1);
                         if (nested != null) {
                             return nested;
@@ -2008,7 +1975,8 @@ final class StorageNetworkIntegration {
         return name.contains("refinedstorage") && name.contains("GridScreen");
     }
 
-    private static void readContainer(Object container, List<ItemStack> target, int size) throws ReflectiveOperationException {
+    private static void readContainer(Object container, List<ItemStack> target, int size)
+            throws ReflectiveOperationException {
         int actualSize = intValue(invokeNoArg(container, "getContainerSize"));
         if (actualSize <= 0) {
             actualSize = intValue(invokeNoArg(container, "size"));
@@ -2054,7 +2022,7 @@ final class StorageNetworkIntegration {
     }
 
     private static Object invoke(Object target, String name, Class<?> parameterType, Object argument)
-        throws ReflectiveOperationException {
+            throws ReflectiveOperationException {
         if (target == null) {
             return null;
         }
@@ -2063,7 +2031,7 @@ final class StorageNetworkIntegration {
     }
 
     private static Constructor<?> constructor(Class<?> type, Class<?>... parameterTypes)
-        throws NoSuchMethodException {
+            throws NoSuchMethodException {
         Constructor<?> constructor = type.getDeclaredConstructor(parameterTypes);
         try {
             constructor.trySetAccessible();
@@ -2082,7 +2050,7 @@ final class StorageNetworkIntegration {
     }
 
     private static Object invokeThreeInts(Object target, String name, int first, int second, int third)
-        throws ReflectiveOperationException {
+            throws ReflectiveOperationException {
         if (target == null) {
             return null;
         }

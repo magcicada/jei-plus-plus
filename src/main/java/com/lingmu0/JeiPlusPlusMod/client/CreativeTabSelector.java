@@ -39,15 +39,15 @@ public final class CreativeTabSelector {
         pose.translate(0.0D, 0.0D, 500.0D);
         graphics.fill(RenderType.guiOverlay(), 0, 0, layout.screenWidth(), layout.screenHeight(), 0x90000000);
         graphics.fill(RenderType.guiOverlay(), layout.x() - 1, layout.y() - 1,
-            layout.x() + layout.width() + 1, layout.y() + layout.height() + 1, 0xFFE0E0E0);
+                layout.x() + layout.width() + 1, layout.y() + layout.height() + 1, 0xFFE0E0E0);
         graphics.fill(RenderType.guiOverlay(), layout.x(), layout.y(),
-            layout.x() + layout.width(), layout.y() + layout.height(), 0xF0101010);
+                layout.x() + layout.width(), layout.y() + layout.height(), 0xF0101010);
         graphics.drawCenteredString(Minecraft.getInstance().font,
-            Component.translatable("jei_plus_plus.creative_tab.selector_title"),
-            layout.x() + layout.width() / 2, layout.y() + 8, 0xFFFFFFFF);
+                Component.translatable("jei_plus_plus.creative_tab.selector_title"),
+                layout.x() + layout.width() / 2, layout.y() + 8, 0xFFFFFFFF);
         int closeX = layout.x() + layout.width() - 16;
         graphics.drawCenteredString(Minecraft.getInstance().font, "x", closeX + 5, layout.y() + 7,
-            inside(mouseX, mouseY, closeX, layout.y() + 4, 12, 12) ? 0xFFFF7777 : 0xFFD0D0D0);
+                inside(mouseX, mouseY, closeX, layout.y() + 4, 12, 12) ? 0xFFFF7777 : 0xFFD0D0D0);
 
         int start = page * layout.pageSize();
         int end = Math.min(total, start + layout.pageSize());
@@ -62,7 +62,7 @@ public final class CreativeTabSelector {
             int border = selected ? 0xFF55DDAA : pinned ? 0xFFFFCC55 : hovered ? 0xFF8099FF : 0xFF707070;
             graphics.fill(RenderType.guiOverlay(), cellX, cellY, cellX + cellWidth, cellY + 18, border);
             graphics.fill(RenderType.guiOverlay(), cellX + 1, cellY + 1, cellX + cellWidth - 1, cellY + 17,
-                selected ? 0xFF17382D : 0xFF202020);
+                    selected ? 0xFF17382D : 0xFF202020);
             ItemStack icon = icon(tabs, index);
             if (!icon.isEmpty()) {
                 graphics.renderItem(icon, cellX + 2, cellY + 1);
@@ -76,11 +76,11 @@ public final class CreativeTabSelector {
 
         int footerY = layout.y() + layout.height() - FOOTER_HEIGHT + 6;
         drawPageButton(graphics, layout.x() + 7, footerY, "<", pageCount > 1,
-            inside(mouseX, mouseY, layout.x() + 7, footerY, 16, 14));
+                inside(mouseX, mouseY, layout.x() + 7, footerY, 16, 14));
         drawPageButton(graphics, layout.x() + layout.width() - 23, footerY, ">", pageCount > 1,
-            inside(mouseX, mouseY, layout.x() + layout.width() - 23, footerY, 16, 14));
+                inside(mouseX, mouseY, layout.x() + layout.width() - 23, footerY, 16, 14));
         graphics.drawCenteredString(Minecraft.getInstance().font, (page + 1) + "/" + pageCount,
-            layout.x() + layout.width() / 2, footerY + 3, 0xFFD0D0D0);
+                layout.x() + layout.width() / 2, footerY + 3, 0xFFD0D0D0);
         pose.popPose();
     }
 
@@ -92,16 +92,15 @@ public final class CreativeTabSelector {
             // Keep the tooltip above the selector and its item-render layer.
             pose.translate(0.0D, 0.0D, 700.0D);
             graphics.renderTooltip(Minecraft.getInstance().font, title(source.jeiPlusPlus$getCreativeTabs(), index),
-                mouseX, mouseY);
+                    mouseX, mouseY);
             pose.popPose();
         }
     }
 
     public static boolean handleClick(
-        IngredientListFeatureSource source,
-        ImmutableRect2i barArea,
-        UserInput input
-    ) {
+            IngredientListFeatureSource source,
+            ImmutableRect2i barArea,
+            UserInput input) {
         if (input.getKey().getType() == InputConstants.Type.KEYSYM) {
             if (input.getKey().getValue() == InputConstants.KEY_ESCAPE && !input.isSimulate()) {
                 source.jeiPlusPlus$setCreativeTabSelectorOpen(false);
@@ -149,18 +148,17 @@ public final class CreativeTabSelector {
             return true;
         }
         if (!inside(mouseX, mouseY, layout.x(), layout.y(), layout.width(), layout.height())
-            && !input.isSimulate()) {
+                && !input.isSimulate()) {
             source.jeiPlusPlus$setCreativeTabSelectorOpen(false);
         }
         return true;
     }
 
     public static boolean handleScroll(
-        IngredientListFeatureSource source,
-        double mouseX,
-        double mouseY,
-        double scrollDeltaY
-    ) {
+            IngredientListFeatureSource source,
+            double mouseX,
+            double mouseY,
+            double scrollDeltaY) {
         if (!source.jeiPlusPlus$isCreativeTabSelectorOpen()) {
             return false;
         }
@@ -178,7 +176,8 @@ public final class CreativeTabSelector {
         }
         int selected = source.jeiPlusPlus$getSelectedCreativeTab();
         String selectedId = selected > 0 && selected <= oldOrder.size()
-            ? CreativeTabOrder.getId(oldOrder.get(selected - 1)) : null;
+                ? CreativeTabOrder.getId(oldOrder.get(selected - 1))
+                : null;
         CreativeTabOrder.togglePinned(oldOrder.get(tabIndex));
         List<CreativeModeTab> newOrder = source.jeiPlusPlus$getCreativeTabs();
         if (selectedId != null) {
@@ -203,7 +202,7 @@ public final class CreativeTabSelector {
         int column = localX / layout.cellWidth();
         int row = localY / ROW_HEIGHT;
         if (column >= COLUMNS || localX % layout.cellWidth() >= layout.cellWidth() - 2
-            || localY % ROW_HEIGHT >= 18) {
+                || localY % ROW_HEIGHT >= 18) {
             return -1;
         }
         int index = source.jeiPlusPlus$getCreativeTabSelectorPage() * layout.pageSize() + row * COLUMNS + column;
@@ -228,7 +227,7 @@ public final class CreativeTabSelector {
         int rows = Math.max(1, Math.min(MAX_ROWS, Math.max(1, (screenHeight - 48) / ROW_HEIGHT)));
         int height = HEADER_HEIGHT + rows * ROW_HEIGHT + FOOTER_HEIGHT + 8;
         return new Layout(screenWidth, screenHeight, (screenWidth - width) / 2, (screenHeight - height) / 2,
-            width, height, (width - 12) / COLUMNS, rows);
+                width, height, (width - 12) / COLUMNS, rows);
     }
 
     private static int pageCount(int total, int pageSize) {
@@ -244,7 +243,9 @@ public final class CreativeTabSelector {
     }
 
     private static Component title(List<CreativeModeTab> tabs, int index) {
-        return index == 0 ? Component.translatable("jei_plus_plus.creative_tab.all") : tabs.get(index - 1).getDisplayName();
+        return index == 0
+                ? Component.translatable("jei_plus_plus.creative_tab.all")
+                : tabs.get(index - 1).getDisplayName();
     }
 
     private static String clip(String text, int maxWidth) {
@@ -266,13 +267,12 @@ public final class CreativeTabSelector {
     }
 
     private static void drawPageButton(
-        GuiGraphics graphics, int x, int y, String label, boolean enabled, boolean hovered
-    ) {
+            GuiGraphics graphics, int x, int y, String label, boolean enabled, boolean hovered) {
         int border = enabled && hovered ? 0xFF8099FF : 0xFF707070;
         graphics.fill(RenderType.guiOverlay(), x, y, x + 16, y + 14, border);
         graphics.fill(RenderType.guiOverlay(), x + 1, y + 1, x + 15, y + 13, 0xFF202020);
         graphics.drawCenteredString(Minecraft.getInstance().font, label, x + 8, y + 3,
-            enabled ? 0xFFFFFFFF : 0xFF666666);
+                enabled ? 0xFFFFFFFF : 0xFF666666);
     }
 
     private static boolean inside(double mouseX, double mouseY, int x, int y, int width, int height) {
@@ -280,8 +280,7 @@ public final class CreativeTabSelector {
     }
 
     private record Layout(
-        int screenWidth, int screenHeight, int x, int y, int width, int height, int cellWidth, int rows
-    ) {
+            int screenWidth, int screenHeight, int x, int y, int width, int height, int cellWidth, int rows) {
         int pageSize() {
             return COLUMNS * rows;
         }

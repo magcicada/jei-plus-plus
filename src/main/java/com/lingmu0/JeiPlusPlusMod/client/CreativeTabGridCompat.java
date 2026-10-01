@@ -26,7 +26,8 @@ public final class CreativeTabGridCompat {
                 source.setAccessible(true);
                 return new GridAccess(source, type.getMethod("getBackgroundArea"), type.getMethod("getBackButtonArea"));
             } catch (ReflectiveOperationException exception) {
-                throw new IllegalStateException("Unsupported JEI ingredient-grid internals: " + type.getName(), exception);
+                throw new IllegalStateException("Unsupported JEI ingredient-grid internals: " + type.getName(),
+                        exception);
             }
         }
     };
@@ -110,7 +111,8 @@ public final class CreativeTabGridCompat {
         }
 
         @Override
-        public @NotNull Optional<IUserInputHandler> handleUserInput(@NotNull Screen screen, @NotNull UserInput input, @NotNull IInternalKeyMappings keyBindings) {
+        public @NotNull Optional<IUserInputHandler> handleUserInput(@NotNull Screen screen, @NotNull UserInput input,
+                @NotNull IInternalKeyMappings keyBindings) {
             IngredientListFeatureSource source = getFeatureSource(owner);
             if (source != null && CreativeTabBar.handleClick(source, getArea(owner), input)) {
                 return Optional.of(this);
@@ -124,12 +126,12 @@ public final class CreativeTabGridCompat {
         }
 
         @Override
-        public @NotNull Optional<IUserInputHandler> handleMouseScrolled(double mouseX, double mouseY, double scrollDelta) {
+        public @NotNull Optional<IUserInputHandler> handleMouseScrolled(double mouseX, double mouseY,
+                double scrollDelta) {
             IngredientListFeatureSource source = getFeatureSource(owner);
             if (source != null) {
                 Optional<IUserInputHandler> result = CreativeTabBar.handleScroll(
-                    source, getArea(owner), mouseX, mouseY, scrollDelta, this
-                );
+                        source, getArea(owner), mouseX, mouseY, scrollDelta, this);
                 if (result.isPresent()) {
                     return result;
                 }

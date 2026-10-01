@@ -18,8 +18,7 @@ public final class RecipeGuiTabScrollInputHandler implements IUserInputHandler {
 
     public RecipeGuiTabScrollInputHandler(
             IUserInputHandler delegate,
-            ScrollHandler scrollHandler
-    ) {
+            ScrollHandler scrollHandler) {
         this.delegate = Objects.requireNonNull(delegate, "delegate");
         this.scrollHandler = Objects.requireNonNull(scrollHandler, "scrollHandler");
     }
@@ -28,8 +27,7 @@ public final class RecipeGuiTabScrollInputHandler implements IUserInputHandler {
     public Optional<IUserInputHandler> handleUserInput(
             Screen screen,
             UserInput input,
-            IInternalKeyMappings keyBindings
-    ) {
+            IInternalKeyMappings keyBindings) {
         return delegate.handleUserInput(screen, input, keyBindings);
     }
 
@@ -42,8 +40,7 @@ public final class RecipeGuiTabScrollInputHandler implements IUserInputHandler {
     public Optional<IUserInputHandler> handleMouseScrolled(
             double mouseX,
             double mouseY,
-            double scrollDelta
-    ) {
+            double scrollDelta) {
         if (scrollHandler.handle(mouseX, mouseY, scrollDelta)) {
             return Optional.of(this);
         }
@@ -56,7 +53,6 @@ public final class RecipeGuiTabScrollInputHandler implements IUserInputHandler {
         boolean handle(
                 double mouseX,
                 double mouseY,
-                double scrollDelta
-        );
+                double scrollDelta);
     }
 }

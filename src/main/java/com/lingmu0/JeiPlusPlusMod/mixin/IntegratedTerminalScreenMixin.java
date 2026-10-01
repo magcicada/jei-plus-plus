@@ -11,26 +11,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /** Keeps recipe-tree highlights below Integrated Terminals' foreground tooltips. */
 @Pseudo
-@Mixin(
-    targets = "org.cyclops.integratedterminals.client.gui.container.ContainerScreenTerminalStorage",
-    remap = false
-)
+@Mixin(targets = "org.cyclops.integratedterminals.client.gui.container.ContainerScreenTerminalStorage", remap = false)
 public abstract class IntegratedTerminalScreenMixin {
-    @Inject(
-        method = {"renderLabels", "m_280003_"},
-        at = @At("HEAD"),
-        remap = false,
-        require = 0
-    )
+    @Inject(method = {"renderLabels", "m_280003_"}, at = @At("HEAD"), remap = false, require = 0)
     private void jeiPlusPlus$renderHighlightsBeforeTooltip(
-        GuiGraphics graphics,
-        int mouseX,
-        int mouseY,
-        CallbackInfo ci
-    ) {
+            GuiGraphics graphics,
+            int mouseX,
+            int mouseY,
+            CallbackInfo ci) {
         RecipeTreeFavorites.renderIntegratedTerminalHighlightsBeforeTooltip(
-            graphics,
-            (AbstractContainerScreen<?>)(Object)this
-        );
+                graphics,
+                (AbstractContainerScreen<?>) (Object) this);
     }
 }

@@ -17,8 +17,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /** Hides JEI's native recipe-bookmark button from recipe layouts. */
 @Mixin(value = GuiIconToggleButton.class, remap = false)
 public abstract class GuiIconToggleButtonMixin {
-    @Shadow @Final protected GuiIconButton button;
-    @Shadow private ImmutableRect2i area;
+    @Shadow
+    @Final
+    protected GuiIconButton button;
+    @Shadow
+    private ImmutableRect2i area;
 
     @Inject(method = "updateBounds(Lmezz/jei/common/util/ImmutableRect2i;)V", at = @At("HEAD"), cancellable = true, remap = false)
     private void jeiPlusPlus$hideRecipeBookmarkBounds(ImmutableRect2i ignored, CallbackInfo ci) {
@@ -47,6 +50,6 @@ public abstract class GuiIconToggleButtonMixin {
 
     private boolean jeiPlusPlus$isRecipeBookmark() {
         return JeiPlusPlusConfig.HIDE_RECIPE_BOOKMARK_BUTTON.get()
-            && (Object) this instanceof RecipeBookmarkButton;
+                && (Object) this instanceof RecipeBookmarkButton;
     }
 }

@@ -37,7 +37,7 @@ public final class RecipeTreeSession {
     private static boolean restoringPersistence;
     /**
      * JEI publishes its runtime before all recipe lookups are necessarily
-     * populated.  Do not permanently mark the session as checked when that
+     * populated. Do not permanently mark the session as checked when that
      * first lookup is empty; retry after the index has settled instead.
      */
     private static final long PERSISTENCE_RETRY_NANOS = 500_000_000L;
@@ -106,9 +106,9 @@ public final class RecipeTreeSession {
     /** Suspend transfers while JEI rebuilds, retaining the active tree data. */
     public static void suspendForRuntimeReload() {
         // JEI normally becomes unavailable before a world is attached during
-        // startup, and again while returning to the title screen.  That is a
+        // startup, and again while returning to the title screen. That is a
         // runtime transition, not a user request to cancel the saved crafting
-        // tree.  Persist the latest in-memory state first, then retain the
+        // tree. Persist the latest in-memory state first, then retain the
         // JSON file while discarding only objects tied to the old runtime.
         persistIfCrafting();
         runtimeReloadPending = true;
@@ -132,8 +132,8 @@ public final class RecipeTreeSession {
         runtimeReloadLevel = null;
         if (!hadWorld || !sameWorld) {
             // A null level is normal during initial JEI startup and world
-            // transitions.  Do not call clear(): it intentionally deletes the
-            // user's persistent session.  The next tree() access will lazily
+            // transitions. Do not call clear(): it intentionally deletes the
+            // user's persistent session. The next tree() access will lazily
             // restore the JSON after JEI and the world are ready.
             discardRuntimeStatePreservingPersistence();
             RecipeTreeFavorites.refreshNow();
@@ -175,8 +175,8 @@ public final class RecipeTreeSession {
             return false;
         }
         return RecipeTreeData.snapshot(layout)
-            .map(snapshot -> snapshot.produces(pendingIngredient))
-            .orElse(false);
+                .map(snapshot -> snapshot.produces(pendingIngredient))
+                .orElse(false);
     }
 
     public static boolean isCurrentResolution(IRecipeLayoutDrawable<?> layout) {
@@ -184,8 +184,8 @@ public final class RecipeTreeSession {
             return false;
         }
         return RecipeTreeData.snapshot(layout)
-            .map(snapshot -> snapshot.ref().key().equals(pendingRecipeKey))
-            .orElse(false);
+                .map(snapshot -> snapshot.ref().key().equals(pendingRecipeKey))
+                .orElse(false);
     }
 
     public static boolean resolve(IRecipeLayoutDrawable<?> layout) {
@@ -215,7 +215,7 @@ public final class RecipeTreeSession {
         }
         String selectedKey = RecipeTreeData.ingredientKey(stack);
         boolean valid = node.alternatives().stream()
-            .anyMatch(alternative -> RecipeTreeData.ingredientKey(alternative).equals(selectedKey));
+                .anyMatch(alternative -> RecipeTreeData.ingredientKey(alternative).equals(selectedKey));
         if (!valid) {
             return false;
         }
@@ -287,10 +287,9 @@ public final class RecipeTreeSession {
             return false;
         }
         List<RecipeTreeData.RecipeSnapshot> candidates = RecipeTreeData.candidateSnapshots(node.stack()).stream()
-            .filter(candidate -> !RecipeTreeDefaults.isExcludedFromAutomaticSelection(
-                candidate.ref().registryId()
-            ))
-            .toList();
+                .filter(candidate -> !RecipeTreeDefaults.isExcludedFromAutomaticSelection(
+                        candidate.ref().registryId()))
+                .toList();
         if (candidates.isEmpty()) {
             return false;
         }
@@ -323,11 +322,11 @@ public final class RecipeTreeSession {
     private static void ensureRestored() {
         long now = System.nanoTime();
         if (persistenceChecked || restoringPersistence || tree != null
-            || Minecraft.getInstance().level == null
-            || DirectoryRecipePlugin.getJeiRuntime() == null
-            || (lastPersistenceAttemptNanos != Long.MIN_VALUE
-                && now - lastPersistenceAttemptNanos >= 0L
-                && now - lastPersistenceAttemptNanos < PERSISTENCE_RETRY_NANOS)) {
+                || Minecraft.getInstance().level == null
+                || DirectoryRecipePlugin.getJeiRuntime() == null
+                || (lastPersistenceAttemptNanos != Long.MIN_VALUE
+                        && now - lastPersistenceAttemptNanos >= 0L
+                        && now - lastPersistenceAttemptNanos < PERSISTENCE_RETRY_NANOS)) {
             return;
         }
         lastPersistenceAttemptNanos = now;
@@ -363,27 +362,26 @@ public final class RecipeTreeSession {
             ItemStack lookup = lookupStack(outputKey, itemId);
             if (lookup.isEmpty()) {
                 // Registries can still be loading during the first client
-                // tick after a world is attached.  Retry instead of losing
+                // tick after a world is attached. Retry instead of losing
                 // the session to an early empty lookup.
                 return;
             }
             List<RecipeTreeData.RecipeRef> candidates = RecipeTreeData.candidates(lookup);
             if (candidates.isEmpty()) {
-                // RecipeTreeData caches lookup results for performance.  An
+                // RecipeTreeData caches lookup results for performance. An
                 // empty result during JEI startup is not authoritative, so
                 // clear it before the next throttled attempt.
                 RecipeTreeData.clearCaches();
                 return;
             }
             RecipeTreeData.RecipeRef ref = candidates.stream()
-                .filter(candidate -> matchesPersistedRecipe(
-                    candidate, recipeKey, categoryKey, registryId
-                ))
-                .findFirst()
-                .orElse(null);
+                    .filter(candidate -> matchesPersistedRecipe(
+                            candidate, recipeKey, categoryKey, registryId))
+                    .findFirst()
+                    .orElse(null);
             if (ref == null) {
                 // The recipe index is ready and the saved recipe is no
-                // longer present.  Keep the file, but stop retrying every
+                // longer present. Keep the file, but stop retrying every
                 // frame for a genuinely stale entry.
                 persistenceChecked = true;
                 return;
@@ -391,11 +389,10 @@ public final class RecipeTreeSession {
             int outputCount = Math.max(1, integer(saved, "count", 1));
             long batches = Math.max(1L, longValue(saved, "batches", 1L));
             Optional<RecipeTreeData.Tree> restored = RecipeTreeData.restore(
-                ref, outputKey, outputCount, batches, true
-            );
+                    ref, outputKey, outputCount, batches, true);
             if (restored.isEmpty()) {
                 // The matching recipe may still be waiting for its layout to
-                // be created.  Leave persistenceChecked false and retry.
+                // be created. Leave persistenceChecked false and retry.
                 RecipeTreeData.clearCaches();
                 return;
             }
@@ -406,7 +403,7 @@ public final class RecipeTreeSession {
             RecipeTreeFavorites.refreshNow();
         } catch (Exception ignored) {
             // A stale recipe id or malformed optional state must never prevent
-            // the client from opening JEI.  Runtime/index failures are
+            // the client from opening JEI. Runtime/index failures are
             // retried on a later tick; the file is left for inspection.
         } finally {
             restoringPersistence = false;
@@ -414,11 +411,10 @@ public final class RecipeTreeSession {
     }
 
     private static boolean matchesPersistedRecipe(
-        RecipeTreeData.RecipeRef candidate,
-        String recipeKey,
-        String categoryKey,
-        String registryId
-    ) {
+            RecipeTreeData.RecipeRef candidate,
+            String recipeKey,
+            String categoryKey,
+            String registryId) {
         if (recipeKey.equals(candidate.key())) {
             return true;
         }
@@ -426,7 +422,7 @@ public final class RecipeTreeSession {
             return false;
         }
         return categoryKey.isEmpty()
-            || categoryKey.equals(candidate.category().getRecipeType().getUid().toString());
+                || categoryKey.equals(candidate.category().getRecipeType().getUid().toString());
     }
 
     private static ItemStack lookupStack(String outputKey, String itemId) {
@@ -456,9 +452,8 @@ public final class RecipeTreeSession {
             saved.addProperty("crafting", true);
             saved.addProperty("recipe", active.root().recipe().ref().key());
             saved.addProperty(
-                "category",
-                active.root().recipe().ref().category().getRecipeType().getUid().toString()
-            );
+                    "category",
+                    active.root().recipe().ref().category().getRecipeType().getUid().toString());
             saved.addProperty("registry", active.root().recipe().ref().registryId());
             saved.addProperty("output", active.root().ingredientKey());
             saved.addProperty("count", active.root().stack().getCount());
@@ -499,9 +494,9 @@ public final class RecipeTreeSession {
 
     private static Path persistentFile() {
         return Minecraft.getInstance().gameDirectory.toPath()
-            .resolve("config")
-            .resolve("jei_plus_plus")
-            .resolve(PERSISTED_FILE);
+                .resolve("config")
+                .resolve("jei_plus_plus")
+                .resolve(PERSISTED_FILE);
     }
 
     private static String string(JsonObject object, String key) {

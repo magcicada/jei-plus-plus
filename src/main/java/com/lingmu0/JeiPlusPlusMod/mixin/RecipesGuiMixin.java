@@ -31,49 +31,33 @@ public abstract class RecipesGuiMixin {
     @Final
     private GuiIconButton previousRecipeCategory;
 
-    @Inject(
-            method = "mouseClicked",
-            at = @At("HEAD"),
-            cancellable = true,
-            remap = true
-    )
+    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true, remap = true)
     private void jeiPlusPlus$clickRecipeTreeButton(
             double mouseX,
             double mouseY,
             int button,
-            CallbackInfoReturnable<Boolean> cir
-    ) {
+            CallbackInfoReturnable<Boolean> cir) {
         if (RecipeTreeOverlay.click(
                 ((RecipesGuiAccessor) this).jeiPlusPlus$getLayouts(),
                 mouseX,
                 mouseY,
-                button
-        )) {
+                button)) {
             cir.setReturnValue(true);
         }
     }
 
-    @Inject(
-            method = "mouseScrolled",
-            at = @At("HEAD"),
-            cancellable = true,
-            remap = true
-    )
+    @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true, remap = true)
     private void jeiPlusPlus$scrollNavigation(
             double mouseX,
             double mouseY,
             double scrollDelta,
-            CallbackInfoReturnable<Boolean> cir
-    ) {
-        if (
-                scrollDelta == 0 ||
-                        !insideBand(
-                                mouseX,
-                                mouseY,
-                                previousRecipeCategory,
-                                nextRecipeCategory
-                        )
-        ) {
+            CallbackInfoReturnable<Boolean> cir) {
+        if (scrollDelta == 0 ||
+                !insideBand(
+                        mouseX,
+                        mouseY,
+                        previousRecipeCategory,
+                        nextRecipeCategory)) {
             return;
         }
 
@@ -91,8 +75,7 @@ public abstract class RecipesGuiMixin {
             double mouseX,
             double mouseY,
             GuiIconButton left,
-            GuiIconButton right
-    ) {
+            GuiIconButton right) {
         ImmutableRect2i leftArea = left.getArea();
         ImmutableRect2i rightArea = right.getArea();
 

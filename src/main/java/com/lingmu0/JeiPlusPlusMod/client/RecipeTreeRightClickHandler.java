@@ -12,11 +12,13 @@ import java.util.Optional;
 /**
  * Handles right-clicks on the recipe-tree sidebar button.
  *
- * <p>This is deliberately a normal JEI input handler instead of an inner
+ * <p>
+ * This is deliberately a normal JEI input handler instead of an inner
  * class of {@code BookmarkOverlayMixin}. Mixin inner classes are treated as
  * part of the mixin class structure, which causes Mixin tooling to reject or
  * warn about ordinary non-mixin inner classes. Keeping the handler separate
- * also avoids an implicit reference to the whole BookmarkOverlay instance.</p>
+ * also avoids an implicit reference to the whole BookmarkOverlay instance.
+ * </p>
  */
 public final class RecipeTreeRightClickHandler implements IUserInputHandler {
     private static final int RIGHT_MOUSE_BUTTON = 1;
@@ -31,8 +33,7 @@ public final class RecipeTreeRightClickHandler implements IUserInputHandler {
     public Optional<IUserInputHandler> handleUserInput(
             Screen screen,
             UserInput input,
-            IInternalKeyMappings keyBindings
-    ) {
+            IInternalKeyMappings keyBindings) {
         if (input.getKey().getType() != InputConstants.Type.MOUSE
                 || input.getKey().getValue() != RIGHT_MOUSE_BUTTON
                 || !treeButton.isMouseOver(input.getMouseX(), input.getMouseY())) {

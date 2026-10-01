@@ -22,13 +22,12 @@ public abstract class BetterBeyondSidebarRendererMixin {
 
     @Inject(method = "render", at = @At("TAIL"), remap = false, require = 0)
     private static void jeiPlusPlus$highlightAfterRender(
-        @Coerce Object host,
-        GuiGraphics graphics,
-        int mouseX,
-        int mouseY,
-        float partialTick,
-        CallbackInfo ci
-    ) {
+            @Coerce Object host,
+            GuiGraphics graphics,
+            int mouseX,
+            int mouseY,
+            float partialTick,
+            CallbackInfo ci) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.screen instanceof AbstractContainerScreen<?> screen) {
             RecipeTreeFavorites.renderBetterBeyondHighlights(graphics, screen);

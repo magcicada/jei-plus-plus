@@ -32,7 +32,8 @@ public final class RecipeTreeSidebarButton extends GuiIconToggleButton {
 
     @Override
     protected boolean onMouseClicked(UserInput input) {
-        if (!JeiPlusPlusConfig.RECIPE_TREE_ENABLED.get()) return false;
+        if (!JeiPlusPlusConfig.RECIPE_TREE_ENABLED.get())
+            return false;
         if (!input.isSimulate()) {
             if (Minecraft.getInstance().screen instanceof RecipeTreeScreen treeScreen) {
                 treeScreen.onClose();
@@ -44,9 +45,16 @@ public final class RecipeTreeSidebarButton extends GuiIconToggleButton {
     }
 
     private record TreeIcon() implements IDrawable {
-        @Override public int getWidth() { return 18; }
-        @Override public int getHeight() { return 18; }
-        @Override public void draw(GuiGraphics graphics, int xOffset, int yOffset) {
+        @Override
+        public int getWidth() {
+            return 18;
+        }
+        @Override
+        public int getHeight() {
+            return 18;
+        }
+        @Override
+        public void draw(GuiGraphics graphics, int xOffset, int yOffset) {
             RecipeTreeIcons.drawGlobalTree(graphics, xOffset, yOffset);
         }
     }

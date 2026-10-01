@@ -25,18 +25,11 @@ import java.util.Optional;
 @Pseudo
 @Mixin(targets = "mezz.jei.gui.recipes.RecipeSlotClickTargetFactory", remap = false)
 public abstract class RecipeSlotClickTargetFactoryMixin {
-    @Inject(
-            method = "create(Lmezz/jei/api/gui/inputs/RecipeSlotUnderMouse;Lmezz/jei/common/input/IMouseOverable;)Ljava/util/Optional;",
-            at = @At("HEAD"),
-            cancellable = true,
-            remap = false,
-            require = 0
-    )
+    @Inject(method = "create(Lmezz/jei/api/gui/inputs/RecipeSlotUnderMouse;Lmezz/jei/common/input/IMouseOverable;)Ljava/util/Optional;", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private void jeiPlusPlus$directoryClick(
-        RecipeSlotUnderMouse slotUnderMouse,
-        IMouseOverable mouseOverable,
-        CallbackInfoReturnable<Optional<IClickableIngredientInternal<?>>> cir
-    ) {
+            RecipeSlotUnderMouse slotUnderMouse,
+            IMouseOverable mouseOverable,
+            CallbackInfoReturnable<Optional<IClickableIngredientInternal<?>>> cir) {
         if (!JeiPlusPlusConfig.RECIPE_INGREDIENT_DIRECTORY_ENABLED.get()) {
             return;
         }
@@ -47,11 +40,10 @@ public abstract class RecipeSlotClickTargetFactoryMixin {
 
         slotUnderMouse.slot().getDisplayedIngredient().ifPresent(displayed -> {
             cir.setReturnValue(Optional.of(new ClickableIngredientInternal<>(
-                new DirectoryIngredientElement(displayed, ingredients),
-                mouseOverable,
-                false,
-                true
-            )));
+                    new DirectoryIngredientElement(displayed, ingredients),
+                    mouseOverable,
+                    false,
+                    true)));
         });
     }
 }

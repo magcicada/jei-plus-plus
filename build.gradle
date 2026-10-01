@@ -21,6 +21,9 @@ spotless {
         target 'src/main/java/**/*.java'
 
         removeUnusedImports()
+
+        eclipse().configFile('spotless.eclipseformat.xml')
+
         trimTrailingWhitespace()
         endWithNewline()
     }

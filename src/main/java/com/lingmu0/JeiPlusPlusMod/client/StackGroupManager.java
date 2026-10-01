@@ -65,14 +65,13 @@ public final class StackGroupManager {
         private final boolean mixNamespaces;
 
         private GroupDefinition(
-            String id,
-            int priority,
-            Component label,
-            ItemMatcher matcher,
-            boolean defaultGroup,
-            boolean nbtGroup,
-            boolean mixNamespaces
-        ) {
+                String id,
+                int priority,
+                Component label,
+                ItemMatcher matcher,
+                boolean defaultGroup,
+                boolean nbtGroup,
+                boolean mixNamespaces) {
             this.id = id;
             this.priority = priority;
             this.label = label;
@@ -111,14 +110,13 @@ public final class StackGroupManager {
     }
 
     private record JsonGroup(
-        String id,
-        String type,
-        String name,
-        boolean enabled,
-        int priority,
-        ItemMatcher matcher,
-        boolean hasMatcher
-    ) {
+            String id,
+            String type,
+            String name,
+            boolean enabled,
+            int priority,
+            ItemMatcher matcher,
+            boolean hasMatcher) {
     }
 
     private record FileStamp(long modified, long size) {
@@ -148,7 +146,8 @@ public final class StackGroupManager {
                 for (JsonGroup group : jsonGroups) {
                     if (isDefaultOverride(group)) {
                         overrides.put(group.id(), group);
-                    } else if (group.enabled && (!"tag".equals(group.type) || JeiPlusPlusConfig.TAG_GROUPING_ENABLED.get())) {
+                    } else if (group.enabled
+                            && (!"tag".equals(group.type) || JeiPlusPlusConfig.TAG_GROUPING_ENABLED.get())) {
                         if (group.hasMatcher) {
                             customGroups.add(group);
                         }
@@ -159,14 +158,14 @@ public final class StackGroupManager {
             List<GroupDefinition> definitions = new ArrayList<>();
             for (JsonGroup group : customGroups) {
                 definitions.add(new GroupDefinition(
-                    group.id,
-                    group.priority,
-                    getJsonLabel(group, "tag".equals(group.type) ? "jei_plus_plus.group.tag" : "jei_plus_plus.group.json"),
-                    group.matcher,
-                    false,
-                    false,
-                    true
-                ));
+                        group.id,
+                        group.priority,
+                        getJsonLabel(group,
+                                "tag".equals(group.type) ? "jei_plus_plus.group.tag" : "jei_plus_plus.group.json"),
+                        group.matcher,
+                        false,
+                        false,
+                        true));
             }
             for (StackGroupCatalog.DefaultGroup group : StackGroupCatalog.DEFAULT_GROUPS) {
                 JsonGroup override = findDefaultOverride(overrides, group.id());
@@ -179,14 +178,13 @@ public final class StackGroupManager {
                             override = null;
                         } else {
                             definitions.add(new GroupDefinition(
-                                override.id,
-                                override.priority,
-                                getJsonLabel(override, group.translationKey()),
-                                override.matcher,
-                                false,
-                                false,
-                                true
-                            ));
+                                    override.id,
+                                    override.priority,
+                                    getJsonLabel(override, group.translationKey()),
+                                    override.matcher,
+                                    false,
+                                    false,
+                                    true));
                             continue;
                         }
                     }
@@ -195,30 +193,28 @@ public final class StackGroupManager {
                     continue;
                 }
                 definitions.add(new GroupDefinition(
-                    group.id(),
-                    0,
-                    Component.translatable(group.translationKey()),
-                    stack -> matchesDefaultGroup(group, stack),
-                    true,
-                    false,
-                    JeiPlusPlusConfig.MIX_NAMESPACE_GROUPS.get()
-                ));
+                        group.id(),
+                        0,
+                        Component.translatable(group.translationKey()),
+                        stack -> matchesDefaultGroup(group, stack),
+                        true,
+                        false,
+                        JeiPlusPlusConfig.MIX_NAMESPACE_GROUPS.get()));
             }
 
             if (JeiPlusPlusConfig.NBT_GROUPING_ENABLED.get()) {
                 definitions.add(new GroupDefinition(
-                    "nbt",
-                    Integer.MIN_VALUE,
-                    Component.empty(),
-                    stack -> true,
-                    false,
-                    true,
-                    true
-                ));
+                        "nbt",
+                        Integer.MIN_VALUE,
+                        Component.empty(),
+                        stack -> true,
+                        false,
+                        true,
+                        true));
             }
 
             // JSON groups are collected before the built-ins, so equal priorities
-            // give the user-defined group precedence.  List.sort is stable.
+            // give the user-defined group precedence. List.sort is stable.
             definitions.sort(Comparator.comparingInt(GroupDefinition::priority).reversed());
             List<GroupDefinition> immutable = List.copyOf(definitions);
             definitionsCacheSignature = signature;
@@ -229,13 +225,14 @@ public final class StackGroupManager {
 
     private static String definitionSignature() {
         StringBuilder signature = new StringBuilder(96)
-            .append(System.identityHashCode(jsonGroups)).append('|')
-            .append(JeiPlusPlusConfig.JSON_GROUPING_ENABLED.get()).append('|')
-            .append(JeiPlusPlusConfig.TAG_GROUPING_ENABLED.get()).append('|')
-            .append(JeiPlusPlusConfig.NBT_GROUPING_ENABLED.get()).append('|')
-            .append(JeiPlusPlusConfig.MIX_NAMESPACE_GROUPS.get());
+                .append(System.identityHashCode(jsonGroups)).append('|')
+                .append(JeiPlusPlusConfig.JSON_GROUPING_ENABLED.get()).append('|')
+                .append(JeiPlusPlusConfig.TAG_GROUPING_ENABLED.get()).append('|')
+                .append(JeiPlusPlusConfig.NBT_GROUPING_ENABLED.get()).append('|')
+                .append(JeiPlusPlusConfig.MIX_NAMESPACE_GROUPS.get());
         for (StackGroupCatalog.DefaultGroup group : StackGroupCatalog.DEFAULT_GROUPS) {
-            signature.append('|').append(group.id()).append('=').append(JeiPlusPlusConfig.isDefaultGroupEnabled(group.id()));
+            signature.append('|').append(group.id()).append('=')
+                    .append(JeiPlusPlusConfig.isDefaultGroupEnabled(group.id()));
         }
         return signature.toString();
     }
@@ -273,8 +270,9 @@ public final class StackGroupManager {
             return false;
         }
         return group.id.startsWith(JeiPlusPlus.MODID + ":")
-            && (group.id.substring((JeiPlusPlus.MODID + ":").length()).startsWith("default/")
-            || StackGroupCatalog.DEFAULT_GROUPS.stream().anyMatch(defaultGroup -> group.id.equals(defaultGroupId(defaultGroup.id()))));
+                && (group.id.substring((JeiPlusPlus.MODID + ":").length()).startsWith("default/")
+                        || StackGroupCatalog.DEFAULT_GROUPS.stream()
+                                .anyMatch(defaultGroup -> group.id.equals(defaultGroupId(defaultGroup.id()))));
     }
 
     private static JsonGroup findDefaultOverride(Map<String, JsonGroup> overrides, String id) {
@@ -291,8 +289,8 @@ public final class StackGroupManager {
             return Component.translatable(fallbackKey, group.id);
         }
         return looksLikeTranslationKey(group.name)
-            ? Component.translatable(group.name)
-            : Component.literal(group.name);
+                ? Component.translatable(group.name)
+                : Component.literal(group.name);
     }
 
     private static boolean looksLikeTranslationKey(String value) {
@@ -307,9 +305,9 @@ public final class StackGroupManager {
         nextRescanNanos = now + RESCAN_INTERVAL_NANOS;
 
         Path directory = Minecraft.getInstance().gameDirectory.toPath()
-            .resolve("config")
-            .resolve(JeiPlusPlus.MODID)
-            .resolve("stack_groups");
+                .resolve("config")
+                .resolve(JeiPlusPlus.MODID)
+                .resolve("stack_groups");
         try {
             Files.createDirectories(directory);
             Map<Path, FileStamp> currentStamps = collectFileStamps(directory);
@@ -339,14 +337,15 @@ public final class StackGroupManager {
         Map<Path, FileStamp> stamps = new LinkedHashMap<>();
         try (Stream<Path> files = Files.list(directory)) {
             files.filter(path -> path.getFileName().toString().endsWith(".json"))
-                .sorted()
-                .forEach(path -> {
-                    try {
-                        stamps.put(path, new FileStamp(Files.getLastModifiedTime(path).toMillis(), Files.size(path)));
-                    } catch (IOException exception) {
-                        LOGGER.warn("Unable to inspect JEI++ stack group {}", path, exception);
-                    }
-                });
+                    .sorted()
+                    .forEach(path -> {
+                        try {
+                            stamps.put(path,
+                                    new FileStamp(Files.getLastModifiedTime(path).toMillis(), Files.size(path)));
+                        } catch (IOException exception) {
+                            LOGGER.warn("Unable to inspect JEI++ stack group {}", path, exception);
+                        }
+                    });
         }
         return stamps;
     }
@@ -473,7 +472,7 @@ public final class StackGroupManager {
 
     private static ItemMatcher withExclusions(ItemMatcher include, List<ItemMatcher> exclusions) {
         return stack -> include != null && include.matches(stack)
-            && exclusions.stream().noneMatch(matcher -> matcher.matches(stack));
+                && exclusions.stream().noneMatch(matcher -> matcher.matches(stack));
     }
 
     private static ItemMatcher anyOf(List<ItemMatcher> matchers) {
@@ -544,15 +543,15 @@ public final class StackGroupManager {
     private static String stringValue(JsonObject object, String key) {
         JsonElement value = object.get(key);
         return value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()
-            ? value.getAsString()
-            : null;
+                ? value.getAsString()
+                : null;
     }
 
     private static boolean booleanValue(JsonObject object, String key, boolean fallback) {
         JsonElement value = object.get(key);
         return value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isBoolean()
-            ? value.getAsBoolean()
-            : fallback;
+                ? value.getAsBoolean()
+                : fallback;
     }
 
     private static int intValue(JsonObject object, String key, int fallback) {

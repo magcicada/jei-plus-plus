@@ -22,7 +22,7 @@ public final class DirectoryIngredientElement extends IngredientElement<Object> 
     @Override
     public void show(IRecipesGui recipesGui, FocusUtil focusUtil, List<RecipeIngredientRole> roles) {
         if (JeiPlusPlusConfig.RECIPE_INGREDIENT_DIRECTORY_ENABLED.get()
-            && roles.contains(RecipeIngredientRole.OUTPUT)) {
+                && roles.contains(RecipeIngredientRole.OUTPUT)) {
             DirectoryViewer.show(recipesGui, ingredients);
         } else {
             super.show(recipesGui, focusUtil, roles);
