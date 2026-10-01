@@ -4,305 +4,181 @@ import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.gui.inputs.RecipeSlotUnderMouse;
 import mezz.jei.api.ingredients.ITypedIngredient;
-import mezz.jei.api.runtime.IJeiRuntime;
+import mezz.jei.api.recipe.RecipeIngredientRole;
+import mezz.jei.api.recipe.category.IRecipeCategory;
+import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.common.Internal;
-import mezz.jei.common.input.IInternalKeyMappings;
+import mezz.jei.common.config.RecipeSorterStage;
+import mezz.jei.common.input.IUserInputHandler;
+import mezz.jei.common.input.UserInput;
+import mezz.jei.common.input.handlers.SameElementInputHandler;
+import mezz.jei.common.transfer.RecipeTransferService;
 import mezz.jei.gui.bookmarks.BookmarkList;
-import mezz.jei.gui.bookmarks.IBookmark;
 import mezz.jei.gui.bookmarks.RecipeBookmark;
-import mezz.jei.gui.input.IUserInputHandler;
-import mezz.jei.gui.input.UserInput;
 import mezz.jei.gui.input.handlers.BookmarkInputHandler;
-import mezz.jei.gui.input.handlers.SameElementInputHandler;
-import mezz.jei.gui.recipes.RecipeGuiLayouts;
+import mezz.jei.gui.overlay.elements.RecipeBookmarkElement;
+import mezz.jei.gui.recipes.IRecipeLayoutWithButtons;
 import mezz.jei.gui.recipes.RecipesGui;
+import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
-import mezz.jei.api.recipe.RecipeIngredientRole;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.util.Objects;
 import java.util.Optional;
 
-/** Uses the recipe bookmark when bookmarking an ingredient in a recipe. */
+/**
+ * Integrates JEI++'s output-slot recipe bookmark preference with JEI 15.62.
+ *
+ * <p>When JEI++'s preference and JEI's BOOKMARKED recipe sorter are both
+ * enabled, an output-slot bookmark becomes a recipe bookmark and uses the
+ * exact output ingredient under the mouse. Input slots are left entirely to
+ * JEI's normal ingredient-bookmark path.</p>
+ */
 @Mixin(value = BookmarkInputHandler.class, remap = false)
 public abstract class BookmarkInputHandlerMixin {
     @Shadow @Final private BookmarkList bookmarkList;
+    @Shadow @Final private RecipesGui recipesGui;
 
     /**
-     * JEI 15.x handles an output-slot bookmark in a separate
-     * {@code handleRecipeBookmark} method before it reaches the ingredient
-     * handler below.  If JEI's BOOKMARKED recipe-sort stage is off, route that
-     * click through JEI's normal ingredient path instead of allowing the
-     * recipe bookmark to be created.
+     * JEI calls this before {@code handleIngredientBookmark}. We only take over
+     * output slots when JEI++ explicitly prefers recipe bookmarks.
+     *
+     * <p>If JEI's BOOKMARKED sorting stage is disabled, return empty so JEI's
+     * own {@code handleUserInput} naturally falls through to
+     * {@code handleIngredientBookmark}. This preserves normal ingredient
+     * bookmarks without reimplementing JEI's bookmark list logic.</p>
      */
     @Inject(
-        method = "handleRecipeBookmark",
-        at = @At("HEAD"),
-        cancellable = true,
-        require = 0,
-        remap = false
+            method = "handleRecipeBookmark",
+            at = @At("HEAD"),
+            cancellable = true,
+            remap = false
     )
-    private void jeiPlusPlus$gateRecipeBookmark(
-        UserInput input,
-        CallbackInfoReturnable<java.util.Optional<IUserInputHandler>> cir
+    private void jeiPlusPlus$handlePreferredRecipeBookmark(
+            UserInput input,
+            CallbackInfoReturnable<Optional<IUserInputHandler>> cir
     ) {
-        if (JeiPlusPlusConfig.PREFER_RECIPE_BOOKMARK_ON_OUTPUT.get()
-            && !isJeiBookmarkedRecipeSortingEnabled()) {
-            cir.setReturnValue(java.util.Optional.empty());
-        }
-    }
-
-    @Inject(
-        method = {"handleBookmark", "handleIngredientBookmark"},
-        at = @At("HEAD"),
-        cancellable = true,
-        require = 0,
-        remap = false
-    )
-    private void jeiPlusPlus$preferRecipeBookmark(
-        UserInput input,
-        IInternalKeyMappings keyBindings,
-        CallbackInfoReturnable<Optional<IUserInputHandler>> cir
-    ) {
-        IJeiRuntime runtime = Internal.getJeiRuntime();
-        if (!(runtime.getRecipesGui() instanceof RecipesGui recipesGui)
-            || Minecraft.getInstance().screen != recipesGui) {
-            // RecipesGui remains alive after it is closed. Do not let its last
-            // layout handle bookmarks clicked in the player's inventory.
+        if (!JeiPlusPlusConfig.PREFER_RECIPE_BOOKMARK_ON_OUTPUT.get()) {
             return;
         }
 
-        RecipeGuiLayouts layouts = ((RecipesGuiAccessor) (Object) recipesGui).jeiPlusPlus$getLayouts();
-        for (Object layoutWithButtons :
-            ((RecipeGuiLayoutsAccessor) (Object) layouts).jeiPlusPlus$getRecipeLayoutsWithButtons()) {
-            IRecipeLayoutDrawable<?> layout = getRecipeLayout(layoutWithButtons);
-            if (layout == null) {
-                continue;
-            }
-            Optional<RecipeSlotUnderMouse> slotUnderMouse = layout.getSlotUnderMouse(input.getMouseX(), input.getMouseY());
-            if (slotUnderMouse.isEmpty() || slotUnderMouse.get().slot().isEmpty()) {
-                continue;
-            }
+        if (!jeiPlusPlus$isBookmarkedRecipeSortingEnabled()) {
+            // Returning empty makes JEI continue into handleIngredientBookmark.
+            cir.setReturnValue(Optional.empty());
+            return;
+        }
 
-            // Input slots must keep JEI's normal ingredient bookmark behavior.
-            // The recipe bookmark preference only applies when the hovered slot is
-            // an output slot.
-            if (slotUnderMouse.get().slot().getRole() != RecipeIngredientRole.OUTPUT) {
-                return;
-            }
+        double mouseX = input.getMouseX();
+        double mouseY = input.getMouseY();
 
-            Optional<ITypedIngredient<?>> output = slotUnderMouse.get().slot().getDisplayedIngredient()
+        Optional<IRecipeLayoutWithButtons<?>> layoutWithButtonsOptional =
+                recipesGui.getRecipeLayoutUnderMouse(mouseX, mouseY);
+        if (layoutWithButtonsOptional.isEmpty()) {
+            return;
+        }
+
+        IRecipeLayoutWithButtons<?> layoutWithButtons = layoutWithButtonsOptional.get();
+        IRecipeLayoutDrawable<?> layout = layoutWithButtons.getRecipeLayout();
+        Optional<RecipeSlotUnderMouse> slotUnderMouse = layout.getSlotUnderMouse(mouseX, mouseY);
+
+        // Input slots must remain normal JEI ingredient bookmarks.
+        if (slotUnderMouse.isEmpty()
+                || slotUnderMouse.get().slot().getRole() != RecipeIngredientRole.OUTPUT) {
+            cir.setReturnValue(Optional.empty());
+            return;
+        }
+
+        Optional<ITypedIngredient<?>> hoveredOutput = slotUnderMouse.get().slot().getDisplayedIngredient()
                 .or(() -> slotUnderMouse.get().slot().getAllIngredients().findFirst());
-            if (output.isEmpty()) {
-                continue;
-            }
-
-            if (!input.isSimulate()) {
-                if (JeiPlusPlusConfig.PREFER_RECIPE_BOOKMARK_ON_OUTPUT.get()
-                    && isJeiBookmarkedRecipeSortingEnabled()) {
-                    Optional<? extends RecipeBookmark<?, ?>> recipeBookmark =
-                        createBookmarkForHoveredOutput(layout, output, runtime);
-                    if (recipeBookmark.isPresent()) {
-                        bookmarkList.toggleBookmark(recipeBookmark.get());
-                    } else {
-                        toggleIngredientBookmark(bookmarkList,
-                            runtime.getIngredientManager().normalizeTypedIngredient(output.get()));
-                    }
-                } else {
-                    toggleIngredientBookmark(bookmarkList,
-                        runtime.getIngredientManager().normalizeTypedIngredient(output.get()));
-                }
-            }
-            IUserInputHandler currentHandler = (IUserInputHandler) (Object) this;
-            cir.setReturnValue(Optional.of(new SameElementInputHandler(currentHandler, layout::isMouseOver)));
+        if (hoveredOutput.isEmpty()) {
+            cir.setReturnValue(Optional.empty());
             return;
         }
+
+        RecipeBookmark<?, ?> templateBookmark = layoutWithButtons.getRecipeBookmark();
+        if (templateBookmark == null) {
+            // If JEI cannot create a recipe bookmark for this layout, leave its
+            // normal ingredient bookmark path available instead.
+            cir.setReturnValue(Optional.empty());
+            return;
+        }
+
+        RecipeBookmark<?, ?> bookmark = jeiPlusPlus$createBookmarkForHoveredOutput(
+                layout,
+                hoveredOutput.get(),
+                templateBookmark
+        );
+        if (bookmark == null) {
+            cir.setReturnValue(Optional.empty());
+            return;
+        }
+
+        if (!input.isSimulate()) {
+            bookmarkList.toggleBookmark(bookmark);
+        }
+
+        IUserInputHandler currentHandler = (IUserInputHandler) (Object) this;
+        cir.setReturnValue(Optional.of(
+                new SameElementInputHandler(currentHandler, layout::isMouseOver)
+        ));
     }
 
+    /**
+     * Builds a JEI 15.62 recipe bookmark with the exact output under the mouse.
+     * The existing bookmark supplies the RecipeTransferService that JEI attached
+     * to this recipe layout, so transfer behavior remains identical to JEI's
+     * native bookmark.
+     */
+    @Unique
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private static Optional<? extends RecipeBookmark<?, ?>> createBookmarkForHoveredOutput(
-        IRecipeLayoutDrawable<?> layout,
-        Optional<ITypedIngredient<?>> output,
-        IJeiRuntime runtime
+    private static RecipeBookmark<?, ?> jeiPlusPlus$createBookmarkForHoveredOutput(
+            IRecipeLayoutDrawable<?> layout,
+            ITypedIngredient<?> hoveredOutput,
+            RecipeBookmark<?, ?> templateBookmark
     ) {
-        if (output.isEmpty()) {
-            return Optional.empty();
-        }
-        ResourceLocation recipeUid = ((mezz.jei.api.recipe.category.IRecipeCategory) layout.getRecipeCategory())
-            .getRegistryName(layout.getRecipe());
+        IRecipeCategory category = layout.getRecipeCategory();
+        Object recipe = layout.getRecipe();
+        ResourceLocation recipeUid = category.getRegistryName(recipe);
         if (recipeUid == null) {
-            return Optional.empty();
+            return null;
         }
-        ITypedIngredient<?> normalized = runtime.getIngredientManager().normalizeTypedIngredient(output.get());
-        /*
-         * RecipeBookmark is an internal JEI value object and its constructor
-         * changed between 15.20 and 15.21.  Keep the addon binary-compatible
-         * with both lines instead of linking against either constructor
-         * signature: 15.20 uses four arguments, 15.21 uses an output-role
-         * argument, and the 19.x line uses a boolean output flag.
-         */
-        for (Constructor<?> constructor : RecipeBookmark.class.getDeclaredConstructors()) {
-            Class<?>[] parameterTypes = constructor.getParameterTypes();
-            Object[] arguments;
-            if (parameterTypes.length == 5 && parameterTypes[4] == RecipeIngredientRole.class) {
-                arguments = new Object[] {
-                    layout.getRecipeCategory(), layout.getRecipe(), recipeUid, normalized,
-                    RecipeIngredientRole.OUTPUT
-                };
-            } else if (parameterTypes.length == 5 && parameterTypes[4] == boolean.class) {
-                arguments = new Object[] {
-                    layout.getRecipeCategory(), layout.getRecipe(), recipeUid, normalized, true
-                };
-            } else if (parameterTypes.length == 4) {
-                arguments = new Object[] {
-                    layout.getRecipeCategory(), layout.getRecipe(), recipeUid, normalized
-                };
-            } else {
-                continue;
-            }
-            try {
-                if (!constructor.trySetAccessible()) {
-                    continue;
-                }
-                return (Optional) Optional.of(constructor.newInstance(arguments));
-            } catch (ReflectiveOperationException | SecurityException ignored) {
-                // Try the next known JEI constructor shape, if present.
-            }
+
+        IIngredientManager ingredientManager = Internal.getJeiRuntime().getIngredientManager();
+        ITypedIngredient<?> normalized = ingredientManager.normalizeTypedIngredient(hoveredOutput);
+
+        Object element = templateBookmark.getElement();
+        if (!(element instanceof RecipeBookmarkElement<?, ?>)) {
+            return null;
         }
-        return Optional.empty();
+
+        RecipeTransferService recipeTransferService =
+                ((RecipeBookmarkElementAccessor) element).jeiPlusPlus$getRecipeTransferService();
+
+        return new RecipeBookmark(
+                category,
+                recipe,
+                recipeUid,
+                normalized,
+                RecipeIngredientRole.OUTPUT,
+                recipeTransferService
+        );
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private static void toggleIngredientBookmark(BookmarkList bookmarks, ITypedIngredient<?> ingredient) {
-        IBookmark existing = null;
-        for (Object value : bookmarks.getElements()) {
-            if (!(value instanceof mezz.jei.gui.overlay.elements.IElement<?> element)) {
-                continue;
-            }
-            Optional<IBookmark> bookmark = element.getBookmark();
-            if (bookmark.isEmpty() || !isIngredientBookmark(bookmark.get())) {
-                continue;
-            }
-            if (sameIngredient(ingredient, element.getTypedIngredient())) {
-                existing = bookmark.get();
-                break;
-            }
-        }
-        if (existing != null) {
-            bookmarks.remove(existing);
-            return;
-        }
+    /** Uses JEI 15.62's own mapping from the BOOKMARKED stage to its config. */
+    @Unique
+    private static boolean jeiPlusPlus$isBookmarkedRecipeSortingEnabled() {
         try {
-            Method add = bookmarks.getClass().getMethod("addIngredientBookmark", ITypedIngredient.class);
-            add.invoke(bookmarks, ingredient);
-            return;
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
-            // JEI 15.x has no addIngredientBookmark method.
-        }
-        try {
-            Class<?> type = Class.forName("mezz.jei.gui.bookmarks.IngredientBookmark");
-            Method create = type.getMethod("create", ITypedIngredient.class, mezz.jei.api.runtime.IIngredientManager.class);
-            IBookmark bookmark = (IBookmark) create.invoke(null, ingredient, Internal.getJeiRuntime().getIngredientManager());
-            bookmarks.toggleBookmark(bookmark);
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
-            // Keep JEI's normal input handling available if an older build has
-            // neither helper shape.
-        }
-    }
-
-    private static boolean isIngredientBookmark(IBookmark bookmark) {
-        return bookmark.getClass().getName().endsWith("IngredientBookmark");
-    }
-
-    private static boolean sameIngredient(ITypedIngredient<?> first, ITypedIngredient<?> second) {
-        if (first == null || second == null || !Objects.equals(first.getType(), second.getType())) {
+            return RecipeSorterStage.BOOKMARKED.isEnabled(
+                    Internal.getClientConfigs().getClientConfig()
+            );
+        } catch (RuntimeException ignored) {
+            // Fail closed: normal ingredient bookmarks are safer if JEI's
+            // client config is temporarily unavailable.
             return false;
         }
-        Object a = first.getIngredient();
-        Object b = second.getIngredient();
-        if (a instanceof net.minecraft.world.item.ItemStack firstStack
-            && b instanceof net.minecraft.world.item.ItemStack secondStack) {
-            return net.minecraft.world.item.ItemStack.matches(firstStack, secondStack);
-        }
-        return Objects.equals(a, b);
-    }
-
-    /**
-     * Recipe bookmarks only make sense when JEI's own BOOKMARKED sorter is
-     * enabled. When the player disables that stage, keep normal ingredient
-     * bookmark behavior even if the JEI++ preference is enabled.
-     */
-    private static boolean isJeiBookmarkedRecipeSortingEnabled() {
-        try {
-            Object config = Internal.getJeiClientConfigs().getClientConfig();
-            Object stages;
-            try {
-                stages = invokeNoArg(config, "getRecipeSorterStages");
-            } catch (ReflectiveOperationException ignored) {
-                Object value = invokeNoArg(config, "recipeSorterStages");
-                stages = invokeNoArg(value, "getValue");
-            }
-            if (stages instanceof java.util.Collection<?> collection) {
-                return collection.stream().anyMatch(BookmarkInputHandlerMixin::isBookmarkedStage);
-            }
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
-            // If a future JEI hides this config, fail closed: an ingredient
-            // bookmark is safer than unexpectedly creating a recipe bookmark.
-        }
-        return false;
-    }
-
-    private static boolean isBookmarkedStage(Object value) {
-        if (value instanceof Enum<?> enumValue) {
-            return "BOOKMARKED".equals(enumValue.name());
-        }
-        return "BOOKMARKED".equals(String.valueOf(value));
-    }
-
-    private static Object invokeNoArg(Object target, String name) throws ReflectiveOperationException {
-        if (target == null) {
-            throw new NoSuchMethodException(name);
-        }
-        Class<?> type = target.getClass();
-        while (type != null) {
-            try {
-                Method method = type.getDeclaredMethod(name);
-                method.setAccessible(true);
-                return method.invoke(target);
-            } catch (NoSuchMethodException ignored) {
-                type = type.getSuperclass();
-            }
-        }
-        Method method = target.getClass().getMethod(name);
-        method.setAccessible(true);
-        return method.invoke(target);
-    }
-
-
-    /**
-     * JEI 15.21 stores its concrete record and exposes recipeLayout(), while
-     * 15.48 stores an interface and exposes getRecipeLayout(). Avoid linking
-     * against either container type so the same jar works with both.
-     */
-    private static IRecipeLayoutDrawable<?> getRecipeLayout(Object layoutWithButtons) {
-        for (String name : new String[]{"getRecipeLayout", "recipeLayout"}) {
-            try {
-                Object value = layoutWithButtons.getClass().getMethod(name).invoke(layoutWithButtons);
-                if (value instanceof IRecipeLayoutDrawable<?> layout) {
-                    return layout;
-                }
-            } catch (ReflectiveOperationException | RuntimeException ignored) {
-                // Try the other JEI layout API name.
-            }
-        }
-        return null;
     }
 }

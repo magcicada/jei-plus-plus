@@ -2,11 +2,12 @@ package com.lingmu0.JeiPlusPlusMod.client;
 
 import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
 import mezz.jei.common.input.IInternalKeyMappings;
+import mezz.jei.common.input.IUserInputHandler;
+import mezz.jei.common.input.UserInput;
 import mezz.jei.common.util.ImmutableRect2i;
-import mezz.jei.gui.input.IUserInputHandler;
-import mezz.jei.gui.input.UserInput;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -109,7 +110,7 @@ public final class CreativeTabGridCompat {
         }
 
         @Override
-        public Optional<IUserInputHandler> handleUserInput(Screen screen, UserInput input, IInternalKeyMappings keyBindings) {
+        public @NotNull Optional<IUserInputHandler> handleUserInput(@NotNull Screen screen, @NotNull UserInput input, @NotNull IInternalKeyMappings keyBindings) {
             IngredientListFeatureSource source = getFeatureSource(owner);
             if (source != null && CreativeTabBar.handleClick(source, getArea(owner), input)) {
                 return Optional.of(this);
@@ -123,7 +124,7 @@ public final class CreativeTabGridCompat {
         }
 
         @Override
-        public Optional<IUserInputHandler> handleMouseScrolled(double mouseX, double mouseY, double scrollDelta) {
+        public @NotNull Optional<IUserInputHandler> handleMouseScrolled(double mouseX, double mouseY, double scrollDelta) {
             IngredientListFeatureSource source = getFeatureSource(owner);
             if (source != null) {
                 Optional<IUserInputHandler> result = CreativeTabBar.handleScroll(

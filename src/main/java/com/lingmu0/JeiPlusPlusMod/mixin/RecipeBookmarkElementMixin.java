@@ -10,6 +10,7 @@ import mezz.jei.gui.bookmarks.RecipeBookmark;
 import mezz.jei.gui.util.FocusUtil;
 import com.lingmu0.JeiPlusPlusMod.client.RecipeBookmarkNavigationContext;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -40,6 +41,7 @@ public abstract class RecipeBookmarkElementMixin {
         ci.cancel();
     }
 
+    @Unique
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static void showAllMatchingRecipes(
         IRecipesGui recipesGui,

@@ -17,9 +17,9 @@ import mezz.jei.common.gui.JeiTooltip;
 import mezz.jei.common.input.IInternalKeyMappings;
 import mezz.jei.common.Internal;
 import mezz.jei.common.platform.Services;
+import mezz.jei.common.input.UserInput;
 import mezz.jei.gui.bookmarks.BookmarkList;
 import mezz.jei.gui.bookmarks.IBookmark;
-import mezz.jei.gui.input.UserInput;
 import mezz.jei.gui.overlay.elements.IElement;
 import mezz.jei.gui.util.FocusUtil;
 import net.minecraft.ChatFormatting;
@@ -60,19 +60,54 @@ public final class RecipeTreeFavorites {
     private static int layoutBookmarkColumns = -1;
     private static boolean synchronizingNativeBookmarkLayout;
     @SuppressWarnings("unchecked")
-    /** Structural ingredient used only by the row-aware JEI renderer. */
+    /* Structural ingredient used only by the row-aware JEI renderer. */
     private static final ITypedIngredient<ItemStack> ROW_BREAK_INGREDIENT =
-        (ITypedIngredient<ItemStack>) Proxy.newProxyInstance(
-            ITypedIngredient.class.getClassLoader(),
-            new Class<?>[]{ITypedIngredient.class},
-            (proxy, method, arguments) -> switch (method.getName()) {
-                case "getType" -> VanillaTypes.ITEM_STACK;
-                case "getIngredient" -> ItemStack.EMPTY;
-                case "getItemStack" -> Optional.empty();
-                case "cast", "castToItemStackType" -> proxy;
-                default -> method.getReturnType() == boolean.class ? false : null;
-            }
-        );
+            (ITypedIngredient<ItemStack>) Proxy.newProxyInstance(
+                    ITypedIngredient.class.getClassLoader(),
+                    new Class<?>[]{ITypedIngredient.class},
+                    (proxy, method, arguments) -> switch (method.getName()) {
+                        case "getType" -> VanillaTypes.ITEM_STACK;
+                        case "getIngredient" -> ItemStack.EMPTY;
+                        case "getItemStack" -> Optional.empty();
+
+                        case "normalize", "castToItemStackType" -> proxy;
+
+                        case "cast" -> {
+                            Object requestedType =
+                                    arguments == null || arguments.length == 0
+                                            ? null
+                                            : arguments[0];
+
+                            yield VanillaTypes.ITEM_STACK.equals(requestedType)
+                                    ? proxy
+                                    : null;
+                        }
+
+                        case "getCastIngredient" -> {
+                            Object requestedType =
+                                    arguments == null || arguments.length == 0
+                                            ? null
+                                            : arguments[0];
+
+                            yield VanillaTypes.ITEM_STACK.equals(requestedType)
+                                    ? ItemStack.EMPTY
+                                    : null;
+                        }
+
+                        case "equals" ->
+                                proxy == (arguments == null ? null : arguments[0]);
+
+                        case "hashCode" ->
+                                System.identityHashCode(proxy);
+
+                        case "toString" ->
+                                "JEI++ recipe-tree row-break ingredient";
+
+                        default -> throw new UnsupportedOperationException(
+                                "Unsupported ITypedIngredient method: " + method
+                        );
+                    }
+            );
 
     private static final Set<IElement<?>> ROW_BREAKS =
         Collections.newSetFromMap(new IdentityHashMap<>());
@@ -520,27 +555,18 @@ public final class RecipeTreeFavorites {
         if (laidOut > 0) {
             return laidOut;
         }
-        int fallback = 9;
+
         try {
-            Object config = Internal.getJeiClientConfigs().getBookmarkListConfig();
-            Object value;
-            try {
-                value = config.getClass().getMethod("getMaxColumns").invoke(config);
-            } catch (ReflectiveOperationException ignored) {
-                value = config.getClass().getMethod("maxColumns").invoke(config);
-                try {
-                    value = value.getClass().getMethod("getValue").invoke(value);
-                } catch (ReflectiveOperationException ignoredValue) {
-                    // 15.x returns the integer directly from getMaxColumns.
-                }
-            }
-            if (value instanceof Number number) {
-                return Math.max(1, number.intValue());
-            }
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
-            // JEI's config API is internal and differs between supported lines.
+            return Math.max(
+                    1,
+                    Internal.getClientConfigs()
+                            .getBookmarkListConfig()
+                            .getMaxColumns()
+            );
+        } catch (RuntimeException ignored) {
+            // JEI may not have initialized its client configs yet.
+            return 9;
         }
-        return fallback;
     }
 
     private static int laidOutBookmarkColumns() {

@@ -6,7 +6,7 @@ import mezz.jei.api.gui.inputs.RecipeSlotUnderMouse;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.gui.input.ClickableIngredientInternal;
 import mezz.jei.gui.input.IClickableIngredientInternal;
-import mezz.jei.gui.input.IMouseOverable;
+import mezz.jei.common.input.IMouseOverable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
@@ -26,11 +26,11 @@ import java.util.Optional;
 @Mixin(targets = "mezz.jei.gui.recipes.RecipeSlotClickTargetFactory", remap = false)
 public abstract class RecipeSlotClickTargetFactoryMixin {
     @Inject(
-        method = "create(Lmezz/jei/api/gui/inputs/RecipeSlotUnderMouse;Lmezz/jei/gui/input/IMouseOverable;)Ljava/util/Optional;",
-        at = @At("HEAD"),
-        cancellable = true,
-        remap = false,
-        require = 0
+            method = "create(Lmezz/jei/api/gui/inputs/RecipeSlotUnderMouse;Lmezz/jei/common/input/IMouseOverable;)Ljava/util/Optional;",
+            at = @At("HEAD"),
+            cancellable = true,
+            remap = false,
+            require = 0
     )
     private void jeiPlusPlus$directoryClick(
         RecipeSlotUnderMouse slotUnderMouse,

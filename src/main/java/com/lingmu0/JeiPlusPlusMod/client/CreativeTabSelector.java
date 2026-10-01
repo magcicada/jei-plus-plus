@@ -1,8 +1,8 @@
 package com.lingmu0.JeiPlusPlusMod.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import mezz.jei.common.input.UserInput;
 import mezz.jei.common.util.ImmutableRect2i;
-import mezz.jei.gui.input.UserInput;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderType;

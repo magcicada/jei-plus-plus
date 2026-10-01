@@ -3,24 +3,21 @@ package com.lingmu0.JeiPlusPlusMod.mixin;
 import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
 import com.lingmu0.JeiPlusPlusMod.client.CreativeTabGridCompat;
 import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeFavorites;
+import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeRightClickHandler;
 import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeScreen;
 import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeSession;
 import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeSidebarButton;
-import com.mojang.blaze3d.platform.InputConstants;
 import mezz.jei.api.gui.handlers.IGuiProperties;
-import mezz.jei.common.input.IInternalKeyMappings;
 import mezz.jei.common.util.ImmutableRect2i;
 import mezz.jei.gui.bookmarks.BookmarkList;
 import mezz.jei.gui.elements.GuiIconToggleButton;
-import mezz.jei.gui.input.IUserInputHandler;
-import mezz.jei.gui.input.UserInput;
-import mezz.jei.gui.input.handlers.CombinedInputHandler;
+import mezz.jei.common.input.IUserInputHandler;
+import mezz.jei.common.input.handlers.CombinedInputHandler;
 import mezz.jei.gui.input.handlers.ProxyInputHandler;
 import mezz.jei.gui.overlay.ScreenPropertiesCache;
 import mezz.jei.gui.overlay.bookmarks.BookmarkOverlay;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -31,7 +28,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.lang.reflect.Field;
-import java.util.Optional;
 
 @Mixin(value = BookmarkOverlay.class, remap = false)
 public abstract class BookmarkOverlayMixin {
@@ -71,7 +67,7 @@ public abstract class BookmarkOverlayMixin {
         }
         int leftWidth = Math.max(0, guiProperties.getGuiLeft());
         ImmutableRect2i bookmarkArea = new ImmutableRect2i(0, 0, leftWidth, guiProperties.getScreenHeight())
-            .insetBy(6);
+                .insetBy(6);
         bookmarkArea = bookmarkArea.keepBottom(20).keepLeft(20);
         GuiIconToggleButton historyButton = jeiPlusPlus$historyButton();
         ImmutableRect2i historyArea = jeiPlusPlus$buttonArea(historyButton);
@@ -95,15 +91,15 @@ public abstract class BookmarkOverlayMixin {
             return;
         }
         if (JeiPlusPlusConfig.RECIPE_TREE_ENABLED.get()
-            && RecipeTreeFavorites.isActive()
-            && screenPropertiesCache.hasValidScreen()) {
+                && RecipeTreeFavorites.isActive()
+                && screenPropertiesCache.hasValidScreen()) {
             cir.setReturnValue(true);
         }
     }
 
     @Inject(method = "drawScreen", at = @At("TAIL"), remap = false)
     private void jeiPlusPlus$drawTreeButton(Minecraft minecraft, GuiGraphics graphics, int mouseX, int mouseY,
-                                             float partialTicks, CallbackInfo ci) {
+                                            float partialTicks, CallbackInfo ci) {
         if (!jeiPlusPlus$isTreeButtonScreen()) {
             return;
         }
@@ -118,7 +114,7 @@ public abstract class BookmarkOverlayMixin {
 
     @Inject(method = "drawTooltips", at = @At("TAIL"), remap = false)
     private void jeiPlusPlus$drawTreeButtonTooltip(Minecraft minecraft, GuiGraphics graphics, int mouseX, int mouseY,
-        CallbackInfo ci) {
+                                                   CallbackInfo ci) {
         if (jeiPlusPlus$isTreeButtonScreen()) {
             jeiPlusPlus$ensureTreeButton();
             jeiPlusPlus$treeButton.drawTooltips(graphics, mouseX, mouseY);
@@ -127,11 +123,11 @@ public abstract class BookmarkOverlayMixin {
 
     @Inject(method = "drawTooltips", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private void jeiPlusPlus$hideBookmarkTooltipsWhileSelectorOpen(
-        Minecraft minecraft,
-        GuiGraphics graphics,
-        int mouseX,
-        int mouseY,
-        CallbackInfo ci
+            Minecraft minecraft,
+            GuiGraphics graphics,
+            int mouseX,
+            int mouseY,
+            CallbackInfo ci
     ) {
         if (CreativeTabGridCompat.isAnySelectorOpen()) {
             ci.cancel();
@@ -143,14 +139,14 @@ public abstract class BookmarkOverlayMixin {
         jeiPlusPlus$ensureTreeButton();
         IUserInputHandler original = cir.getReturnValue();
         IUserInputHandler treeButtonInput = new CombinedInputHandler(
-            "JeiPlusPlusRecipeTreeButton",
-            new JeiPlusPlusRightClickHandler(),
-            jeiPlusPlus$treeButton.createInputHandler()
+                "JeiPlusPlusRecipeTreeButton",
+                new RecipeTreeRightClickHandler(jeiPlusPlus$treeButton),
+                jeiPlusPlus$treeButton.createInputHandler()
         );
         IUserInputHandler normalScreenInput = new CombinedInputHandler(
-            "JeiPlusPlusRecipeTreeAndBookmarks",
-            treeButtonInput,
-            original
+                "JeiPlusPlusRecipeTreeAndBookmarks",
+                treeButtonInput,
+                original
         );
         cir.setReturnValue(new ProxyInputHandler(() -> {
             if (!JeiPlusPlusConfig.RECIPE_TREE_ENABLED.get()) {
@@ -166,7 +162,7 @@ public abstract class BookmarkOverlayMixin {
     @Unique
     private boolean jeiPlusPlus$isTreeButtonScreen() {
         return JeiPlusPlusConfig.RECIPE_TREE_ENABLED.get()
-            && (screenPropertiesCache.hasValidScreen() || Minecraft.getInstance().screen instanceof RecipeTreeScreen);
+                && (screenPropertiesCache.hasValidScreen() || Minecraft.getInstance().screen instanceof RecipeTreeScreen);
     }
 
     @Unique
@@ -265,26 +261,5 @@ public abstract class BookmarkOverlayMixin {
         }
     }
 
-    @Unique
-    private final class JeiPlusPlusRightClickHandler implements IUserInputHandler {
-        @Override
-        public Optional<IUserInputHandler> handleUserInput(
-            Screen screen,
-            UserInput input,
-            IInternalKeyMappings keyBindings
-        ) {
-            if (input.getKey().getType() != InputConstants.Type.MOUSE
-                || input.getKey().getValue() != 1
-                || !jeiPlusPlus$treeButton.isMouseOver(input.getMouseX(), input.getMouseY())) {
-                return Optional.empty();
-            }
-            if (!input.isSimulate()) {
-                RecipeTreeSession.clear();
-                if (screen instanceof RecipeTreeScreen treeScreen) {
-                    treeScreen.onClose();
-                }
-            }
-            return Optional.of(this);
-        }
-    }
+
 }

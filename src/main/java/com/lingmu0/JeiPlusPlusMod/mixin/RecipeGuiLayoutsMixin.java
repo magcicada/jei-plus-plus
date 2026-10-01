@@ -53,34 +53,4 @@ public abstract class RecipeGuiLayoutsMixin {
     ) {
         com.lingmu0.JeiPlusPlusMod.client.RecipeTreeOverlay.draw((RecipeGuiLayouts) (Object) this, guiGraphics, mouseX, mouseY);
     }
-
-    /** JEI 15.20 and older kept the click target helper in this class. */
-    @Inject(
-        method = "getClickedIngredient",
-        at = @At("HEAD"),
-        cancellable = true,
-        remap = false,
-        require = 0
-    )
-    private static void jeiPlusPlus$directoryClick(
-        RecipeSlotUnderMouse slotUnderMouse,
-        CallbackInfoReturnable<Optional<IClickableIngredientInternal<?>>> cir
-    ) {
-        if (!JeiPlusPlusConfig.RECIPE_INGREDIENT_DIRECTORY_ENABLED.get()) {
-            return;
-        }
-        List<ITypedIngredient<?>> ingredients = slotUnderMouse.slot().getAllIngredients().toList();
-        if (ingredients.size() <= 1) {
-            return;
-        }
-
-        slotUnderMouse.slot().getDisplayedIngredient().ifPresent(displayed -> {
-            cir.setReturnValue(Optional.of(new ClickableIngredientInternal<>(
-                new DirectoryIngredientElement(displayed, ingredients),
-                slotUnderMouse::isMouseOver,
-                false,
-                true
-            )));
-        });
-    }
 }
