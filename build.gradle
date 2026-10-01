@@ -13,6 +13,27 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
+    id 'com.diffplug.spotless' version '6.25.0'
+}
+
+spotless {
+    java {
+        target 'src/main/java/**/*.java'
+
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+
+    format 'misc', {
+        target '*.gradle',
+                '*.properties',
+                'src/main/resources/**/*.json',
+                'src/main/resources/**/*.toml'
+
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }
 
 apply plugin: 'org.spongepowered.mixin'

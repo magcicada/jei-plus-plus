@@ -14,7 +14,6 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.runtime.IJeiRuntime;
 import mezz.jei.api.runtime.IRecipesGui;
 import mezz.jei.common.gui.JeiTooltip;
-import mezz.jei.common.input.IInternalKeyMappings;
 import mezz.jei.common.Internal;
 import mezz.jei.common.platform.Services;
 import mezz.jei.common.input.UserInput;

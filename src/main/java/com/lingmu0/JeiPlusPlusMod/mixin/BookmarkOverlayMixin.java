@@ -5,7 +5,6 @@ import com.lingmu0.JeiPlusPlusMod.client.CreativeTabGridCompat;
 import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeFavorites;
 import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeRightClickHandler;
 import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeScreen;
-import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeSession;
 import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeSidebarButton;
 import mezz.jei.api.gui.handlers.IGuiProperties;
 import mezz.jei.common.util.ImmutableRect2i;

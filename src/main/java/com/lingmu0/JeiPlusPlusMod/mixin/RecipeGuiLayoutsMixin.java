@@ -1,12 +1,6 @@
 package com.lingmu0.JeiPlusPlusMod.mixin;
 
-import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
 import com.lingmu0.JeiPlusPlusMod.client.CreativeTabGridCompat;
-import com.lingmu0.JeiPlusPlusMod.client.DirectoryIngredientElement;
-import mezz.jei.api.gui.inputs.RecipeSlotUnderMouse;
-import mezz.jei.api.ingredients.ITypedIngredient;
-import mezz.jei.gui.input.IClickableIngredientInternal;
-import mezz.jei.gui.input.ClickableIngredientInternal;
 import mezz.jei.gui.recipes.RecipeGuiLayouts;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import net.minecraft.client.gui.GuiGraphics;
@@ -15,7 +9,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.List;
 import java.util.Optional;
 
 /** Adds a directory action to cycling/multi-ingredient recipe slots. */

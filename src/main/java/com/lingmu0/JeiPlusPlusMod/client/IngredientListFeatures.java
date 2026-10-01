@@ -4,17 +4,12 @@ import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
 import mezz.jei.common.gui.JeiTooltip;
 import mezz.jei.common.input.UserInput;
 import mezz.jei.gui.overlay.elements.IElement;
-import mezz.jei.gui.util.FocusUtil;
 import mezz.jei.api.gui.drawable.IDrawable;
-import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.runtime.IRecipesGui;
-import mezz.jei.common.input.IInternalKeyMappings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
