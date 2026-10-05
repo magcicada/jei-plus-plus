@@ -23,10 +23,12 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.lang.reflect.Field;
+import java.util.function.Supplier;
 
 @Mixin(value = BookmarkOverlay.class, remap = false)
 public abstract class BookmarkOverlayMixin {
@@ -83,9 +85,10 @@ public abstract class BookmarkOverlayMixin {
             // JEI 15.21 added lookup history between the bookmark and the
             // sidebar. Place our button after whichever built-in controls are
             // actually present instead of assuming the old two-button layout.
-            jeiPlusPlus$treeButton.updateBounds(historyArea.moveRight(22));
+            // Reserve one additional 22-pixel slot for other sidebar controls.
+            jeiPlusPlus$treeButton.updateBounds(historyArea.moveRight(44));
         } else {
-            jeiPlusPlus$treeButton.updateBounds(bookmarkArea.moveRight(22));
+            jeiPlusPlus$treeButton.updateBounds(bookmarkArea.moveRight(44));
         }
     }
 
@@ -142,10 +145,16 @@ public abstract class BookmarkOverlayMixin {
         }
     }
 
-    @Inject(method = "createInputHandler", at = @At("RETURN"), cancellable = true, remap = false)
-    private void jeiPlusPlus$addTreeButtonInput(CallbackInfoReturnable<IUserInputHandler> cir) {
+    /**
+     * Extend JEI's proxy supplier without cancelling createInputHandler.
+     * A cancellable RETURN injection would skip later RETURN callbacks, including
+     * ExtendedAE Plus's network-overlay button input handler.
+     */
+    @ModifyArg(method = "createInputHandler", at = @At(value = "INVOKE", target = "Lmezz/jei/gui/input/handlers/ProxyInputHandler;<init>(Ljava/util/function/Supplier;)V"), index = 0, remap = false)
+    private Supplier<IUserInputHandler> jeiPlusPlus$addTreeButtonInput(
+            Supplier<IUserInputHandler> originalSupplier) {
         jeiPlusPlus$ensureTreeButton();
-        IUserInputHandler original = cir.getReturnValue();
+        IUserInputHandler original = new ProxyInputHandler(originalSupplier);
         IUserInputHandler treeButtonInput = new CombinedInputHandler(
                 "JeiPlusPlusRecipeTreeButton",
                 new RecipeTreeRightClickHandler(jeiPlusPlus$treeButton),
@@ -154,7 +163,7 @@ public abstract class BookmarkOverlayMixin {
                 "JeiPlusPlusRecipeTreeAndBookmarks",
                 treeButtonInput,
                 original);
-        cir.setReturnValue(new ProxyInputHandler(() -> {
+        return () -> {
             if (!JeiPlusPlusConfig.RECIPE_TREE_ENABLED.get()) {
                 return original;
             }
@@ -162,7 +171,7 @@ public abstract class BookmarkOverlayMixin {
                 return treeButtonInput;
             }
             return screenPropertiesCache.hasValidScreen() ? normalScreenInput : original;
-        }));
+        };
     }
 
     @Unique
