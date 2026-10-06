@@ -2,9 +2,9 @@ package com.lingmu0.JeiPlusPlusMod.client;
 
 import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
 import com.mojang.blaze3d.platform.InputConstants;
+import mezz.jei.common.input.IUserInputHandler;
+import mezz.jei.common.input.UserInput;
 import mezz.jei.common.util.ImmutableRect2i;
-import mezz.jei.gui.input.IUserInputHandler;
-import mezz.jei.gui.input.UserInput;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderType;
@@ -39,18 +39,17 @@ public final class CreativeTabBar {
         int x = backgroundArea.getX();
         int width = backgroundArea.getWidth();
         int y = navigationArea.isEmpty()
-            ? Math.max(2, backgroundArea.getY() - RESERVED_HEIGHT)
-            : Math.max(2, navigationArea.getY() - HEIGHT - 1);
+                ? Math.max(2, backgroundArea.getY() - RESERVED_HEIGHT)
+                : Math.max(2, navigationArea.getY() - HEIGHT - 1);
         return new ImmutableRect2i(x, y, width, HEIGHT);
     }
 
     public static void draw(
-        IngredientListFeatureSource source,
-        GuiGraphics guiGraphics,
-        ImmutableRect2i area,
-        int mouseX,
-        int mouseY
-    ) {
+            IngredientListFeatureSource source,
+            GuiGraphics guiGraphics,
+            ImmutableRect2i area,
+            int mouseX,
+            int mouseY) {
         if (!isEnabled(source) || area.isEmpty()) {
             return;
         }
@@ -66,26 +65,24 @@ public final class CreativeTabBar {
         int start = page * capacity;
 
         guiGraphics.fill(
-            RenderType.guiOverlay(),
-            area.getX(),
-            area.getY(),
-            area.getX() + area.getWidth(),
-            area.getY() + area.getHeight(),
-            0xD0202020
-        );
+                RenderType.guiOverlay(),
+                area.getX(),
+                area.getY(),
+                area.getX() + area.getWidth(),
+                area.getY() + area.getHeight(),
+                0xD0202020);
 
         for (int slot = 0; slot < capacity && start + slot < total; slot++) {
             int tabIndex = start + slot;
             int x = getTabX(area, slot, capacity);
             if (tabIndex == selected) {
                 guiGraphics.fill(
-                    RenderType.guiOverlay(),
-                    x,
-                    area.getY(),
-                    x + SLOT_SIZE,
-                    area.getY() + HEIGHT,
-                    0xD0FFFFFF
-                );
+                        RenderType.guiOverlay(),
+                        x,
+                        area.getY(),
+                        x + SLOT_SIZE,
+                        area.getY() + HEIGHT,
+                        0xD0FFFFFF);
             }
             ItemStack icon = getIcon(tabs, tabIndex);
             if (!icon.isEmpty()) {
@@ -93,29 +90,33 @@ public final class CreativeTabBar {
             }
         }
 
-        // Page controls are deliberately drawn after item icons.  JEI renders
+        // Page controls are deliberately drawn after item icons. JEI renders
         // stacks with depth enabled, so the controls and page label need a
         // high overlay layer to remain visible above them.
         var pose = guiGraphics.pose();
         pose.pushPose();
         pose.translate(0.0D, 0.0D, 300.0D);
         drawPageButton(guiGraphics, area.getX(), area.getY(), true, pageCount > 1,
-            isInside(area, area.getX(), mouseX, mouseY));
+                isInside(area, area.getX(), mouseX, mouseY));
         drawPageButton(guiGraphics, area.getX() + area.getWidth() - SLOT_SIZE, area.getY(), false,
-            pageCount > 1,
-            isInside(area, area.getX() + area.getWidth() - SLOT_SIZE, mouseX, mouseY));
+                pageCount > 1,
+                isInside(area, area.getX() + area.getWidth() - SLOT_SIZE, mouseX, mouseY));
 
         String pageLabel = (page + 1) + "/" + pageCount;
         if (JeiPlusPlusConfig.CREATIVE_TAB_PAGE_NUMBER_ENABLED.get()) {
-            int labelX = area.getX() + (area.getWidth() - Minecraft.getInstance().font.width(pageLabel)) / 2;
+            var font = Minecraft.getInstance().font;
+
+            int labelSlotX = getPageLabelSlotX(area, capacity);
+
+            int labelX = labelSlotX
+                    + (SLOT_SIZE - font.width(pageLabel)) / 2;
             guiGraphics.drawString(
-                Minecraft.getInstance().font,
-                pageLabel,
-                labelX,
-                area.getY() + 5,
-                0xFFFFFFFF,
-                true
-            );
+                    font,
+                    pageLabel,
+                    labelX,
+                    area.getY() + 5,
+                    0xFFFFFFFF,
+                    true);
         }
         pose.popPose();
         if (source.jeiPlusPlus$isCreativeTabSelectorOpen()) {
@@ -124,12 +125,11 @@ public final class CreativeTabBar {
     }
 
     public static void drawTooltip(
-        IngredientListFeatureSource source,
-        GuiGraphics guiGraphics,
-        ImmutableRect2i area,
-        int mouseX,
-        int mouseY
-    ) {
+            IngredientListFeatureSource source,
+            GuiGraphics guiGraphics,
+            ImmutableRect2i area,
+            int mouseX,
+            int mouseY) {
         if (!isEnabled(source) || area.isEmpty()) {
             return;
         }
@@ -141,20 +141,18 @@ public final class CreativeTabBar {
         int page = clampPage(source.jeiPlusPlus$getCreativeTabPage(), pageCount);
         if (isPageButton(area, mouseX, mouseY, true) && pageCount > 1) {
             guiGraphics.renderTooltip(
-                Minecraft.getInstance().font,
-                Component.translatable("jei_plus_plus.creative_tab.previous_page"),
-                mouseX,
-                mouseY
-            );
+                    Minecraft.getInstance().font,
+                    Component.translatable("jei_plus_plus.creative_tab.previous_page"),
+                    mouseX,
+                    mouseY);
             return;
         }
         if (isPageButton(area, mouseX, mouseY, false) && pageCount > 1) {
             guiGraphics.renderTooltip(
-                Minecraft.getInstance().font,
-                Component.translatable("jei_plus_plus.creative_tab.next_page"),
-                mouseX,
-                mouseY
-            );
+                    Minecraft.getInstance().font,
+                    Component.translatable("jei_plus_plus.creative_tab.next_page"),
+                    mouseX,
+                    mouseY);
             return;
         }
         int tabIndex = getTabAt(source, area, mouseX, mouseY, page, getCapacity(area));
@@ -166,16 +164,15 @@ public final class CreativeTabBar {
     }
 
     public static boolean handleClick(
-        IngredientListFeatureSource source,
-        ImmutableRect2i area,
-        UserInput input
-    ) {
+            IngredientListFeatureSource source,
+            ImmutableRect2i area,
+            UserInput input) {
         if (source != null && source.jeiPlusPlus$isCreativeTabSelectorOpen()) {
             return CreativeTabSelector.handleClick(source, area, input);
         }
         if (!isEnabled(source)
-            || input.getKey().getType() != InputConstants.Type.MOUSE
-            || !area.contains(input.getMouseX(), input.getMouseY())) {
+                || input.getKey().getType() != InputConstants.Type.MOUSE
+                || !area.contains(input.getMouseX(), input.getMouseY())) {
             return false;
         }
         if (input.getKey().getValue() == 1) {
@@ -213,13 +210,12 @@ public final class CreativeTabBar {
     }
 
     public static Optional<IUserInputHandler> handleScroll(
-        IngredientListFeatureSource source,
-        ImmutableRect2i area,
-        double mouseX,
-        double mouseY,
-        double scrollDeltaY,
-        IUserInputHandler self
-    ) {
+            IngredientListFeatureSource source,
+            ImmutableRect2i area,
+            double mouseX,
+            double mouseY,
+            double scrollDeltaY,
+            IUserInputHandler self) {
         if (source != null && source.jeiPlusPlus$isCreativeTabSelectorOpen()) {
             if (CreativeTabSelector.handleScroll(source, mouseX, mouseY, scrollDeltaY)) {
                 return Optional.of(self);
@@ -241,9 +237,15 @@ public final class CreativeTabBar {
     }
 
     static int getCapacity(ImmutableRect2i area) {
-        // The page label is an overlay and does not consume a category slot.
-        int contentWidth = Math.max(SLOT_SIZE, area.getWidth() - SLOT_SIZE * 2);
-        return Math.max(1, Math.min(MAX_VISIBLE_TABS, contentWidth / SLOT_SIZE));
+        // Reserve the left/right navigation slots and one center slot
+        // for the page label so it never overlaps a creative-tab icon.
+        int contentWidth = Math.max(
+                SLOT_SIZE,
+                area.getWidth() - SLOT_SIZE * 3);
+
+        return Math.max(
+                1,
+                Math.min(MAX_VISIBLE_TABS, contentWidth / SLOT_SIZE));
     }
 
     private static int getPageCount(int total, int capacity) {
@@ -254,35 +256,62 @@ public final class CreativeTabBar {
         return Math.max(0, Math.min(page, pageCount - 1));
     }
 
-    private static int getTabX(ImmutableRect2i area, int slot, int capacity) {
-        return area.getX() + SLOT_SIZE + slot * SLOT_SIZE;
+    private static int getTabX(
+            ImmutableRect2i area,
+            int slot,
+            int capacity) {
+        int x = area.getX() + SLOT_SIZE + slot * SLOT_SIZE;
+
+        int centerSlot = capacity / 2;
+
+        if (slot >= centerSlot) {
+            x += SLOT_SIZE;
+        }
+
+        return x;
     }
 
     private static int getTabAt(
-        IngredientListFeatureSource source,
-        ImmutableRect2i area,
-        double mouseX,
-        double mouseY,
-        int page,
-        int capacity
-    ) {
+            IngredientListFeatureSource source,
+            ImmutableRect2i area,
+            double mouseX,
+            double mouseY,
+            int page,
+            int capacity) {
         if (!isEnabled(source) || !area.contains(mouseX, mouseY)) {
             return -1;
         }
-        if (isPageButton(area, mouseX, mouseY, true) || isPageButton(area, mouseX, mouseY, false)) {
+
+        if (isPageButton(area, mouseX, mouseY, true) ||
+                isPageButton(area, mouseX, mouseY, false)) {
             return -1;
         }
-        int firstTabX = area.getX() + SLOT_SIZE;
-        int slot = (int) ((mouseX - firstTabX) / SLOT_SIZE);
-        if (mouseX < firstTabX || mouseX >= firstTabX + capacity * SLOT_SIZE) {
-            slot = -1;
+
+        for (int slot = 0; slot < capacity; slot++) {
+            int x = getTabX(area, slot, capacity);
+
+            if (mouseX >= x &&
+                    mouseX < x + SLOT_SIZE &&
+                    mouseY >= area.getY() &&
+                    mouseY < area.getY() + HEIGHT) {
+                int tabIndex = page * capacity + slot;
+                int total = source.jeiPlusPlus$getCreativeTabs().size() + 1;
+
+                return tabIndex < total ? tabIndex : -1;
+            }
         }
-        if (slot < 0 || slot >= capacity) {
-            return -1;
-        }
-        int tabIndex = page * capacity + slot;
-        int total = source.jeiPlusPlus$getCreativeTabs().size() + 1;
-        return tabIndex < total ? tabIndex : -1;
+
+        return -1;
+    }
+
+    private static int getPageLabelSlotX(
+            ImmutableRect2i area,
+            int capacity) {
+        int centerSlot = capacity / 2;
+
+        return area.getX()
+                + SLOT_SIZE
+                + centerSlot * SLOT_SIZE;
     }
 
     private static boolean isPageButton(ImmutableRect2i area, double mouseX, double mouseY, boolean left) {
@@ -292,17 +321,16 @@ public final class CreativeTabBar {
 
     private static boolean isInside(ImmutableRect2i area, int x, int mouseX, int mouseY) {
         return mouseX >= x && mouseX < x + SLOT_SIZE
-            && mouseY >= area.getY() && mouseY < area.getY() + HEIGHT;
+                && mouseY >= area.getY() && mouseY < area.getY() + HEIGHT;
     }
 
     private static void drawPageButton(
-        GuiGraphics guiGraphics,
-        int x,
-        int y,
-        boolean left,
-        boolean enabled,
-        boolean hovered
-    ) {
+            GuiGraphics guiGraphics,
+            int x,
+            int y,
+            boolean left,
+            boolean enabled,
+            boolean hovered) {
         int background = hovered && enabled ? 0xFF777777 : enabled ? 0xFF555555 : 0xFF303030;
         int border = enabled ? 0xFFB0B0B0 : 0xFF555555;
         int arrow = enabled ? 0xFFFFFFFF : 0xFF707070;

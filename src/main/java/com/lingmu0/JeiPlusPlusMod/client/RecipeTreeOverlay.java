@@ -47,10 +47,10 @@ public final class RecipeTreeOverlay {
 
             if (treeHovered) {
                 String key = RecipeTreeSession.isCurrentResolution(layout)
-                    ? "jei_plus_plus.recipe_tree.clear_resolution_button"
-                    : (RecipeTreeSession.canResolve(layout)
-                        ? "jei_plus_plus.recipe_tree.resolve_button"
-                        : "jei_plus_plus.recipe_tree.button");
+                        ? "jei_plus_plus.recipe_tree.clear_resolution_button"
+                        : (RecipeTreeSession.canResolve(layout)
+                                ? "jei_plus_plus.recipe_tree.resolve_button"
+                                : "jei_plus_plus.recipe_tree.button");
                 graphics.renderTooltip(Minecraft.getInstance().font, Component.translatable(key), mouseX, mouseY);
             } else if (defaultHovered) {
                 String key = switch (status) {
@@ -87,8 +87,8 @@ public final class RecipeTreeOverlay {
 
     /**
      * Reserve only the columns that the JEI-style side-button layout actually
-     * needs.  Buttons are assigned the same vertical-first indices as JEI
-     * 19.x: transfer, bookmark, then the extra controls.  This keeps the
+     * needs. Buttons are assigned the same vertical-first indices as JEI
+     * 19.x: transfer, bookmark, then the extra controls. This keeps the
      * recipe centered when the controls fit above the transfer button and
      * grows the layout only when a new column is required.
      */
@@ -136,29 +136,27 @@ public final class RecipeTreeOverlay {
         }
         if (buttonArea.getWidth() <= 0 || buttonArea.getHeight() <= 0) {
             int maxRows = Math.max(1, (layout.getRectWithBorder().getHeight() + BUTTON_GAP)
-                / (BUTTON_SIZE + BUTTON_GAP));
+                    / (BUTTON_SIZE + BUTTON_GAP));
             int xIndex = buttonIndex / maxRows;
             int yIndex = buttonIndex % maxRows;
             return new Rect2i(
-                rect.getX() + rect.getWidth() + BUTTON_GAP + xIndex * (BUTTON_SIZE + BUTTON_GAP),
-                rect.getY() + rect.getHeight() - BUTTON_SIZE - yIndex * (BUTTON_SIZE + BUTTON_GAP),
-                BUTTON_SIZE,
-                BUTTON_SIZE
-            );
+                    rect.getX() + rect.getWidth() + BUTTON_GAP + xIndex * (BUTTON_SIZE + BUTTON_GAP),
+                    rect.getY() + rect.getHeight() - BUTTON_SIZE - yIndex * (BUTTON_SIZE + BUTTON_GAP),
+                    BUTTON_SIZE,
+                    BUTTON_SIZE);
         }
 
         int maxRows = Math.max(1, (layout.getRectWithBorder().getHeight() + BUTTON_GAP)
-            / (buttonArea.getHeight() + BUTTON_GAP));
+                / (buttonArea.getHeight() + BUTTON_GAP));
         int xIndex = buttonIndex / maxRows;
         int yIndex = buttonIndex % maxRows;
         buttonArea.setX(buttonArea.getX() + xIndex * (buttonArea.getWidth() + BUTTON_GAP));
         buttonArea.setY(buttonArea.getY() - yIndex * (buttonArea.getHeight() + BUTTON_GAP));
         return new Rect2i(
-            rect.getX() + buttonArea.getX(),
-            rect.getY() + buttonArea.getY(),
-            buttonArea.getWidth(),
-            buttonArea.getHeight()
-        );
+                rect.getX() + buttonArea.getX(),
+                rect.getY() + buttonArea.getY(),
+                buttonArea.getWidth(),
+                buttonArea.getHeight());
     }
 
     private static void drawButton(GuiGraphics graphics, Rect2i area, boolean hovered, boolean pressed) {
@@ -167,12 +165,12 @@ public final class RecipeTreeOverlay {
         // native bookmark/transfer buttons.
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         Internal.getTextures().getButtonForState(pressed, true, hovered)
-            .draw(graphics, area.getX(), area.getY(), area.getWidth(), area.getHeight());
+                .draw(graphics, area.getX(), area.getY(), area.getWidth(), area.getHeight());
     }
 
     private static boolean contains(Rect2i area, double mouseX, double mouseY) {
         return mouseX >= area.getX() && mouseX < area.getX() + area.getWidth()
-            && mouseY >= area.getY() && mouseY < area.getY() + area.getHeight();
+                && mouseY >= area.getY() && mouseY < area.getY() + area.getHeight();
     }
 
     /**
@@ -181,10 +179,9 @@ public final class RecipeTreeOverlay {
      * Reflect only the stable concrete controls and skip errored layouts.
      */
     private record LayoutWrapper(
-        IRecipeLayoutDrawable<?> layout,
-        boolean transferVisible,
-        boolean bookmarkVisible
-    ) {
+            IRecipeLayoutDrawable<?> layout,
+            boolean transferVisible,
+            boolean bookmarkVisible) {
         private static LayoutWrapper create(Object wrapper) {
             IRecipeLayoutDrawable<?> layout = invokeLayout(wrapper, "getRecipeLayout", "recipeLayout");
             Object transferButton = invoke(wrapper, "transferButton");
@@ -193,10 +190,9 @@ public final class RecipeTreeOverlay {
                 return null;
             }
             return new LayoutWrapper(
-                layout,
-                invokeBoolean(transferButton, "isVisible"),
-                invokeBoolean(bookmarkButton, "isVisible")
-            );
+                    layout,
+                    invokeBoolean(transferButton, "isVisible"),
+                    invokeBoolean(bookmarkButton, "isVisible"));
         }
 
         private static IRecipeLayoutDrawable<?> invokeLayout(Object target, String... names) {

@@ -13,73 +13,62 @@ import java.util.Map;
 public final class JeiPlusPlusConfig {
     private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
 
-    public static final ForgeConfigSpec.BooleanValue PREFER_RECIPE_BOOKMARK_ON_OUTPUT =
-        BUILDER
-            .comment("Prefer a recipe bookmark when bookmarking a recipe output. When disabled, bookmark the output ingredient.")
+    public static final ForgeConfigSpec.BooleanValue PREFER_RECIPE_BOOKMARK_ON_OUTPUT = BUILDER
+            .comment(
+                    "Prefer a recipe bookmark when bookmarking a recipe output. When disabled, bookmark the output ingredient.")
             .define("preferRecipeBookmarkOnOutput", true);
 
-    public static final ForgeConfigSpec.BooleanValue HIDE_RECIPE_BOOKMARK_BUTTON =
-        BUILDER
+    public static final ForgeConfigSpec.BooleanValue HIDE_RECIPE_BOOKMARK_BUTTON = BUILDER
             .comment("Hide JEI's native add-to-bookmark button in recipe layouts.")
             .define("hideRecipeBookmarkButton", true);
 
-    public static final ForgeConfigSpec.BooleanValue CREATIVE_TAB_BAR_ENABLED =
-        BUILDER
+    public static final ForgeConfigSpec.BooleanValue CREATIVE_TAB_BAR_ENABLED = BUILDER
             .comment("Show a creative-mode item tab bar above JEI's ingredient list.")
             .define("creativeTabBarEnabled", true);
 
-    public static final ForgeConfigSpec.BooleanValue CREATIVE_TAB_PAGE_NUMBER_ENABLED =
-        BUILDER
+    public static final ForgeConfigSpec.BooleanValue CREATIVE_TAB_PAGE_NUMBER_ENABLED = BUILDER
             .comment("Show the current page number on the creative-mode item tab bar.")
             .define("creativeTabPageNumberEnabled", true);
 
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> PINNED_CREATIVE_TABS =
-        BUILDER
-            .comment("Creative-tab ids pinned to the front of the tab order. Right-click a tab in the selector to change this list.")
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> PINNED_CREATIVE_TABS = BUILDER
+            .comment(
+                    "Creative-tab ids pinned to the front of the tab order. Right-click a tab in the selector to change this list.")
             .defineList("pinnedCreativeTabs", List.of(), value -> value instanceof String);
 
-    public static final ForgeConfigSpec.BooleanValue RECIPE_INGREDIENT_DIRECTORY_ENABLED =
-        BUILDER
+    public static final ForgeConfigSpec.BooleanValue RECIPE_INGREDIENT_DIRECTORY_ENABLED = BUILDER
             .comment("Open JEI++'s ingredient directory when clicking a recipe slot with multiple output items.")
             .define("recipeIngredientDirectoryEnabled", true);
 
-    public static final ForgeConfigSpec.BooleanValue STACK_GROUPING_ENABLED =
-        BUILDER
+    public static final ForgeConfigSpec.BooleanValue STACK_GROUPING_ENABLED = BUILDER
             .comment("Collapse related item variants in JEI's ingredient list. Click a group to expand it.")
             .define("stackGroupingEnabled", true);
 
-    public static final ForgeConfigSpec.BooleanValue RECIPE_TREE_ENABLED =
-        BUILDER
+    public static final ForgeConfigSpec.BooleanValue RECIPE_TREE_ENABLED = BUILDER
             .comment("Add recipe-tree and crafting-assistant buttons to JEI recipe layouts.")
             .define("recipeTreeEnabled", true);
 
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> DISABLED_RECIPE_TYPES =
-        BUILDER
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> DISABLED_RECIPE_TYPES = BUILDER
             .comment("Recipe type ids excluded from the recipe tree, for example [\"minecraft:blasting\"].")
             .defineList("disabledRecipeTypes", List.of(), value -> value instanceof String);
 
-    public static final ForgeConfigSpec.BooleanValue AUTOMATIC_CRAFTING_ENABLED =
-        BUILDER
-            .comment("Allow Ctrl-left-click in the recipe-tree bookmarks to automatically craft missing intermediate steps.")
+    public static final ForgeConfigSpec.BooleanValue AUTOMATIC_CRAFTING_ENABLED = BUILDER
+            .comment(
+                    "Allow Ctrl-left-click in the recipe-tree bookmarks to automatically craft missing intermediate steps.")
             .define("automaticCraftingEnabled", true);
 
-    public static final ForgeConfigSpec.BooleanValue NBT_GROUPING_ENABLED =
-        BUILDER
+    public static final ForgeConfigSpec.BooleanValue NBT_GROUPING_ENABLED = BUILDER
             .comment("Collapse different NBT/component variants of the same item, such as potions and enchanted books.")
             .define("nbtGroupingEnabled", true);
 
-    public static final ForgeConfigSpec.BooleanValue TAG_GROUPING_ENABLED =
-        BUILDER
+    public static final ForgeConfigSpec.BooleanValue TAG_GROUPING_ENABLED = BUILDER
             .comment("Enable JSON-defined item tag groups in config/jei_plus_plus/stack_groups.")
             .define("tagGroupingEnabled", true);
 
-    public static final ForgeConfigSpec.BooleanValue JSON_GROUPING_ENABLED =
-        BUILDER
+    public static final ForgeConfigSpec.BooleanValue JSON_GROUPING_ENABLED = BUILDER
             .comment("Enable custom JSON stack groups in config/jei_plus_plus/stack_groups.")
             .define("jsonGroupingEnabled", true);
 
-    public static final ForgeConfigSpec.BooleanValue MIX_NAMESPACE_GROUPS =
-        BUILDER
+    public static final ForgeConfigSpec.BooleanValue MIX_NAMESPACE_GROUPS = BUILDER
             .comment("Mix matching default groups from different mod namespaces. JSON groups are always explicit.")
             .define("mixNamespaceGroups", true);
 

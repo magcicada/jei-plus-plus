@@ -17,14 +17,14 @@ public final class RecipeTreeIcons {
 
     public static void initialize(IGuiHelper guiHelper) {
         globalTree = guiHelper.drawableBuilder(texture("recipe_tree_global.png"), 0, 0, 18, 18)
-            .setTextureSize(18, 18)
-            .build();
+                .setTextureSize(18, 18)
+                .build();
         recipeTree = guiHelper.drawableBuilder(texture("recipe_tree.png"), 0, 0, 10, 10)
-            .setTextureSize(10, 10)
-            .build();
+                .setTextureSize(10, 10)
+                .build();
         defaultRecipe = guiHelper.drawableBuilder(texture("recipe_default.png"), 0, 0, 10, 10)
-            .setTextureSize(10, 10)
-            .build();
+                .setTextureSize(10, 10)
+                .build();
     }
 
     public static void drawGlobalTree(GuiGraphics graphics, int x, int y) {

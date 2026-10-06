@@ -46,7 +46,7 @@ public final class RecipeTreeTransfer {
     private static final int AE2_WAIT_FRAMES = 600;
     /**
      * A small bounded wait for custom instant menus whose result slot is not a
-     * vanilla menu type.  We only enable this probe when the menu exposes a
+     * vanilla menu type. We only enable this probe when the menu exposes a
      * non-placeable slot, so timed machines and ordinary input-only menus keep
      * their previous fail-safe behavior.
      */
@@ -101,10 +101,9 @@ public final class RecipeTreeTransfer {
      * operations that the current inventory/container can accept.
      */
     public static boolean transfer(
-        RecipeTreeData.CraftStep step,
-        boolean recursive,
-        boolean maxTransfer
-    ) {
+            RecipeTreeData.CraftStep step,
+            boolean recursive,
+            boolean maxTransfer) {
         clearPending();
         if (!recursive) {
             if (!exposeParentContainer()) {
@@ -123,9 +122,9 @@ public final class RecipeTreeTransfer {
             return false;
         }
         pendingCrafts = plan.stream()
-            .filter(candidate -> candidate.batches() > 0)
-            .map(candidate -> new PendingCraft(candidate, candidate.batches()))
-            .toList();
+                .filter(candidate -> candidate.batches() > 0)
+                .map(candidate -> new PendingCraft(candidate, candidate.batches()))
+                .toList();
         if (!exposeParentContainer()) {
             clearPending();
             return false;
@@ -140,9 +139,9 @@ public final class RecipeTreeTransfer {
         }
         Minecraft minecraft = Minecraft.getInstance();
         if (!(currentScreen instanceof AbstractContainerScreen<?> screen)
-            || minecraft.player == null
-            || minecraft.gameMode == null
-            || screen.getMenu().containerId != pendingMenuId) {
+                || minecraft.player == null
+                || minecraft.gameMode == null
+                || screen.getMenu().containerId != pendingMenuId) {
             clearPending();
             return;
         }
@@ -163,8 +162,7 @@ public final class RecipeTreeTransfer {
         if (pendingGenericResultProbe) {
             PendingCraft craft = pendingCrafts.get(pendingCraftIndex);
             int genericResult = findGenericResultSlot(
-                screen.getMenu(), craft.step, minecraft.player
-            );
+                    screen.getMenu(), craft.step, minecraft.player);
             if (genericResult >= 0) {
                 pendingResultSlot = genericResult;
                 pendingGenericResultProbe = false;
@@ -209,10 +207,9 @@ public final class RecipeTreeTransfer {
         emptyFrames = 0;
         long ownedBefore = RecipeTreeData.inventoryAmount(outputBefore);
         Boolean ae2Pickup = StorageNetworkIntegration.takeCraftingResult(
-            screen.getMenu(),
-            pendingResultSlot,
-            true
-        );
+                screen.getMenu(),
+                pendingResultSlot,
+                true);
         if (Boolean.TRUE.equals(ae2Pickup)) {
             // CRAFT_ITEM places one result on the menu cursor. Wait for the
             // server sync, then put that exact one-result stack into the
@@ -232,12 +229,11 @@ public final class RecipeTreeTransfer {
             return;
         }
         minecraft.gameMode.handleInventoryMouseClick(
-            pendingMenuId,
-            pendingResultSlot,
-            0,
-            ClickType.QUICK_MOVE,
-            minecraft.player
-        );
+                pendingMenuId,
+                pendingResultSlot,
+                0,
+                ClickType.QUICK_MOVE,
+                minecraft.player);
         pendingVanillaPickup = true;
         pendingPickupAttempts = 1;
         waitFrames = 1;
@@ -265,12 +261,11 @@ public final class RecipeTreeTransfer {
             return;
         }
         minecraft.gameMode.handleInventoryMouseClick(
-            pendingMenuId,
-            pendingResultSlot,
-            0,
-            ClickType.QUICK_MOVE,
-            minecraft.player
-        );
+                pendingMenuId,
+                pendingResultSlot,
+                0,
+                ClickType.QUICK_MOVE,
+                minecraft.player);
         waitFrames = 1;
     }
 
@@ -285,8 +280,8 @@ public final class RecipeTreeTransfer {
         if (pendingAe2PlacementInFlight) {
             if (carried.isEmpty()) {
                 if (!pendingAe2OutputKey.isEmpty()
-                    && playerInventoryAmount(menu, minecraft.player, pendingAe2OutputKey)
-                        > pendingAe2PlacementInventoryBefore) {
+                        && playerInventoryAmount(menu, minecraft.player,
+                                pendingAe2OutputKey) > pendingAe2PlacementInventoryBefore) {
                     completePendingCraft();
                     return;
                 }
@@ -299,10 +294,10 @@ public final class RecipeTreeTransfer {
             }
 
             long inventoryAmount = pendingAe2OutputKey.isEmpty()
-                ? 0
-                : playerInventoryAmount(menu, minecraft.player, pendingAe2OutputKey);
+                    ? 0
+                    : playerInventoryAmount(menu, minecraft.player, pendingAe2OutputKey);
             if (carried.getCount() < pendingAe2PlacementCount
-                || inventoryAmount > pendingAe2PlacementInventoryBefore) {
+                    || inventoryAmount > pendingAe2PlacementInventoryBefore) {
                 // The server acknowledged the click. If there is a remainder,
                 // re-scan once the acknowledgement is visible; do not resend
                 // the same click while the first packet is still in flight.
@@ -330,7 +325,7 @@ public final class RecipeTreeTransfer {
             // inventory or their network instead of synchronizing a carried
             // stack. Either destination completes this one crafting step.
             if (!pendingAe2OutputStack.isEmpty()
-                && RecipeTreeData.inventoryAmount(pendingAe2OutputStack) > pendingAe2InventoryBefore) {
+                    && RecipeTreeData.inventoryAmount(pendingAe2OutputStack) > pendingAe2InventoryBefore) {
                 completePendingCraft();
                 return;
             }
@@ -353,15 +348,14 @@ public final class RecipeTreeTransfer {
             pendingAe2PlacementInFlight = true;
             pendingAe2PlacementCount = carried.getCount();
             pendingAe2PlacementInventoryBefore = pendingAe2OutputKey.isEmpty()
-                ? 0
-                : playerInventoryAmount(menu, minecraft.player, pendingAe2OutputKey);
+                    ? 0
+                    : playerInventoryAmount(menu, minecraft.player, pendingAe2OutputKey);
             minecraft.gameMode.handleInventoryMouseClick(
-                pendingMenuId,
-                target,
-                0,
-                ClickType.PICKUP,
-                minecraft.player
-            );
+                    pendingMenuId,
+                    target,
+                    0,
+                    ClickType.PICKUP,
+                    minecraft.player);
             waitFrames = 1;
             return;
         }
@@ -470,10 +464,9 @@ public final class RecipeTreeTransfer {
     }
 
     private static int findInventoryDestination(
-        AbstractContainerMenu menu,
-        Player player,
-        ItemStack stack
-    ) {
+            AbstractContainerMenu menu,
+            Player player,
+            ItemStack stack) {
         if (player == null || stack.isEmpty()) {
             return -1;
         }
@@ -485,8 +478,8 @@ public final class RecipeTreeTransfer {
             }
             ItemStack existing = slot.getItem();
             if (!existing.isEmpty()
-                && RecipeTreeData.ingredientKey(existing).equals(RecipeTreeData.ingredientKey(stack))
-                && existing.getCount() < Math.min(slot.getMaxStackSize(), stack.getMaxStackSize())) {
+                    && RecipeTreeData.ingredientKey(existing).equals(RecipeTreeData.ingredientKey(stack))
+                    && existing.getCount() < Math.min(slot.getMaxStackSize(), stack.getMaxStackSize())) {
                 int capacity = Math.min(slot.getMaxStackSize(), stack.getMaxStackSize()) - existing.getCount();
                 if (capacity >= stack.getCount()) {
                     return slot.index;
@@ -503,17 +496,16 @@ public final class RecipeTreeTransfer {
     }
 
     private static long playerInventoryAmount(
-        AbstractContainerMenu menu,
-        Player player,
-        String key
-    ) {
+            AbstractContainerMenu menu,
+            Player player,
+            String key) {
         if (menu == null || player == null || key == null || key.isEmpty()) {
             return 0;
         }
         long amount = 0;
         for (Slot slot : menu.slots) {
             if (slot.container == player.getInventory() && !slot.getItem().isEmpty()
-                && key.equals(RecipeTreeData.ingredientKey(slot.getItem()))) {
+                    && key.equals(RecipeTreeData.ingredientKey(slot.getItem()))) {
                 amount += slot.getItem().getCount();
             }
         }
@@ -546,7 +538,7 @@ public final class RecipeTreeTransfer {
         // slot contains the primary output. Both are valid outputs of the same
         // recipe and must allow that crafting operation to complete.
         return RecipeTreeData.snapshot(step.recipe()).outputs().stream()
-            .anyMatch(output -> actualKey.equals(RecipeTreeData.ingredientKey(output)));
+                .anyMatch(output -> actualKey.equals(RecipeTreeData.ingredientKey(output)));
     }
 
     private static boolean startNextCraft() {
@@ -566,13 +558,12 @@ public final class RecipeTreeTransfer {
         Minecraft minecraft = Minecraft.getInstance();
         int resultSlot = instantResultSlot(menu);
         boolean genericResult = resultSlot < 0
-            && hasGenericResultSlot(menu, minecraft.player);
+                && hasGenericResultSlot(menu, minecraft.player);
         int chunk;
         if (resultSlot >= 0 || genericResult) {
             int requested = transferChunk(craft.step, craft.remainingBatches, true);
             int inputCapacity = maxBatchesForInstantInputs(
-                menu, craft.step, craft.step.selectedInputs(), true
-            );
+                    menu, craft.step, craft.step.selectedInputs(), true);
             chunk = Math.min(requested, inputCapacity);
         } else {
             chunk = transferChunk(craft.step, craft.remainingBatches, true);
@@ -606,24 +597,23 @@ public final class RecipeTreeTransfer {
     }
 
     /**
-     * Finds an already populated output-like slot in a custom menu.  The
+     * Finds an already populated output-like slot in a custom menu. The
      * non-placeable-slot check is the common contract used by vanilla result
      * slots and prevents us from ever clicking a normal input slot by guess.
      */
     private static int findGenericResultSlot(
-        AbstractContainerMenu menu,
-        RecipeTreeData.CraftStep step,
-        Player player
-    ) {
+            AbstractContainerMenu menu,
+            RecipeTreeData.CraftStep step,
+            Player player) {
         if (menu == null || step == null || player == null) {
             return -1;
         }
         for (Slot slot : menu.slots) {
             if (slot.container == player.getInventory()
-                || slot.mayPlace(ItemStack.EMPTY)
-                || !slot.hasItem()
-                || !isExpectedCraftOutput(step, slot.getItem())
-                || !slot.mayPickup(player)) {
+                    || slot.mayPlace(ItemStack.EMPTY)
+                    || !slot.hasItem()
+                    || !isExpectedCraftOutput(step, slot.getItem())
+                    || !slot.mayPickup(player)) {
                 continue;
             }
             return slot.index;
@@ -632,15 +622,14 @@ public final class RecipeTreeTransfer {
     }
 
     private static boolean hasGenericResultSlot(
-        AbstractContainerMenu menu,
-        Player player
-    ) {
+            AbstractContainerMenu menu,
+            Player player) {
         if (menu == null || player == null) {
             return false;
         }
         return menu.slots.stream()
-            .anyMatch(slot -> slot.container != player.getInventory()
-                && !slot.mayPlace(ItemStack.EMPTY));
+                .anyMatch(slot -> slot.container != player.getInventory()
+                        && !slot.mayPlace(ItemStack.EMPTY));
     }
 
     private static int transferChunk(RecipeTreeData.CraftStep step) {
@@ -648,10 +637,9 @@ public final class RecipeTreeTransfer {
     }
 
     private static int transferChunk(
-        RecipeTreeData.CraftStep step,
-        long requested,
-        boolean recursiveCandidates
-    ) {
+            RecipeTreeData.CraftStep step,
+            long requested,
+            boolean recursiveCandidates) {
         if (step == null || requested <= 0) {
             return 0;
         }
@@ -660,10 +648,9 @@ public final class RecipeTreeTransfer {
             return 0;
         }
         int capacity = maxBatchesPerTransfer(
-            layout.getRecipeSlotsView(),
-            step.selectedInputs(),
-            recursiveCandidates
-        );
+                layout.getRecipeSlotsView(),
+                step.selectedInputs(),
+                recursiveCandidates);
         return (int) Math.max(1, Math.min(Math.min(Integer.MAX_VALUE, requested), capacity));
     }
 
@@ -674,11 +661,10 @@ public final class RecipeTreeTransfer {
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static int maxBatchesForInstantInputs(
-        AbstractContainerMenu menu,
-        RecipeTreeData.CraftStep step,
-        List<String> selectedInputs,
-        boolean recursiveCandidates
-    ) {
+            AbstractContainerMenu menu,
+            RecipeTreeData.CraftStep step,
+            List<String> selectedInputs,
+            boolean recursiveCandidates) {
         if (menu == null || step == null || Ae2StorageIntegration.isCraftingMenu(menu)) {
             return 1;
         }
@@ -688,8 +674,8 @@ public final class RecipeTreeTransfer {
         }
 
         List<IRecipeSlotView> inputs = layout.getRecipeSlotsView().getSlotViews().stream()
-            .filter(slot -> slot.getRole() == RecipeIngredientRole.INPUT)
-            .toList();
+                .filter(slot -> slot.getRole() == RecipeIngredientRole.INPUT)
+                .toList();
         if (inputs.isEmpty()) {
             return 1;
         }
@@ -698,7 +684,7 @@ public final class RecipeTreeTransfer {
         try {
             IRecipeTransferManager manager = Internal.getJeiRuntime().getRecipeTransferManager();
             Optional<IRecipeTransferHandler<AbstractContainerMenu, Object>> handler = (Optional) manager
-                .getRecipeTransferHandler(menu, (IRecipeCategory) layout.getRecipeCategory());
+                    .getRecipeTransferHandler(menu, (IRecipeCategory) layout.getRecipeCategory());
             if (handler.isPresent()) {
                 transferSlots = findTransferSlots(handler.get(), menu, layout.getRecipe());
             }
@@ -716,10 +702,9 @@ public final class RecipeTreeTransfer {
                     continue;
                 }
                 Optional<ItemStack> input = selectedInput(
-                    inputs.get(index),
-                    index < selectedInputs.size() ? selectedInputs.get(index) : "",
-                    recursiveCandidates
-                );
+                        inputs.get(index),
+                        index < selectedInputs.size() ? selectedInputs.get(index) : "",
+                        recursiveCandidates);
                 if (input.isEmpty()) {
                     // Fluids and other non-item ingredients are intentionally
                     // left on the old safe path.
@@ -729,7 +714,7 @@ public final class RecipeTreeTransfer {
                 ItemStack stack = input.get();
                 int perBatch = Math.max(1, stack.getCount());
                 int slotCapacity = transferSlots.recipeSlots().get(index)
-                    .getMaxStackSize(stack);
+                        .getMaxStackSize(stack);
                 result = Math.min(result, Math.max(1, slotCapacity / perBatch));
             }
             return foundItemInput ? Math.max(1, result) : 1;
@@ -757,10 +742,9 @@ public final class RecipeTreeTransfer {
                 continue;
             }
             Optional<ItemStack> input = selectedInput(
-                inputView,
-                inputIndex < selectedInputs.size() ? selectedInputs.get(inputIndex) : "",
-                recursiveCandidates
-            );
+                    inputView,
+                    inputIndex < selectedInputs.size() ? selectedInputs.get(inputIndex) : "",
+                    recursiveCandidates);
             if (input.isEmpty()) {
                 return 1;
             }
@@ -785,12 +769,11 @@ public final class RecipeTreeTransfer {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static boolean runTransfer(
-        RecipeTreeData.CraftStep step,
-        int batches,
-        boolean doTransfer,
-        boolean recursiveCandidates,
-        boolean maxTransfer
-    ) {
+            RecipeTreeData.CraftStep step,
+            int batches,
+            boolean doTransfer,
+            boolean recursiveCandidates,
+            boolean maxTransfer) {
         if (step == null || batches <= 0) {
             return false;
         }
@@ -808,60 +791,54 @@ public final class RecipeTreeTransfer {
             return false;
         }
         AbstractContainerMenu menu = screen.getMenu();
-        // Prefer JEI's normal container-transfer handler.  It is the safest
+        // Prefer JEI's normal container-transfer handler. It is the safest
         // path for ordinary menus and for network mods that already expose a
-        // JEI handler.  The reflective network packet is only the fallback
+        // JEI handler. The reflective network packet is only the fallback
         // for a fake-slot terminal where no generic handler can move items.
         boolean ae2Menu = Ae2StorageIntegration.isCraftingMenu(menu);
         if (!ae2Menu || maxTransfer) {
             Boolean generic = tryJeiTransfer(
-                menu, layout, step.selectedInputs(), batches, player,
-                doTransfer, recursiveCandidates, maxTransfer
-            );
+                    menu, layout, step.selectedInputs(), batches, player,
+                    doTransfer, recursiveCandidates, maxTransfer);
             if (Boolean.TRUE.equals(generic)) {
                 return true;
             }
         }
 
         Boolean networkTransfer = tryNetworkCraftingTransfer(
-            menu, layout, step.selectedInputs(), doTransfer, recursiveCandidates
-        );
+                menu, layout, step.selectedInputs(), doTransfer, recursiveCandidates);
         if (networkTransfer != null) {
             return networkTransfer;
         }
         return ae2Menu
-            ? tryJeiTransfer(
-                menu, layout, step.selectedInputs(), batches, player,
-                doTransfer, recursiveCandidates, maxTransfer
-            )
-            : false;
+                ? tryJeiTransfer(
+                        menu, layout, step.selectedInputs(), batches, player,
+                        doTransfer, recursiveCandidates, maxTransfer)
+                : false;
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static Boolean tryJeiTransfer(
-        AbstractContainerMenu menu,
-        IRecipeLayoutDrawable<?> layout,
-        List<String> selectedInputs,
-        int batches,
-        Player player,
-        boolean doTransfer,
-        boolean recursiveCandidates,
-        boolean maxTransfer
-    ) {
+            AbstractContainerMenu menu,
+            IRecipeLayoutDrawable<?> layout,
+            List<String> selectedInputs,
+            int batches,
+            Player player,
+            boolean doTransfer,
+            boolean recursiveCandidates,
+            boolean maxTransfer) {
         IRecipeTransferManager manager = Internal.getJeiRuntime().getRecipeTransferManager();
         Optional<IRecipeTransferHandler<AbstractContainerMenu, Object>> handler = (Optional) manager
-            .getRecipeTransferHandler(menu, (IRecipeCategory) layout.getRecipeCategory());
+                .getRecipeTransferHandler(menu, (IRecipeCategory) layout.getRecipeCategory());
         if (handler.isEmpty()) {
             return false;
         }
         IRecipeSlotsView slots = adjustInputs(
-            layout.getRecipeSlotsView(), selectedInputs, batches, recursiveCandidates, player
-        );
-            IRecipeTransferError validation;
+                layout.getRecipeSlotsView(), selectedInputs, batches, recursiveCandidates, player);
+        IRecipeTransferError validation;
         try {
             validation = handler.get().transferRecipe(
-                menu, layout.getRecipe(), slots, player, maxTransfer, false
-            );
+                    menu, layout.getRecipe(), slots, player, maxTransfer, false);
         } catch (RuntimeException ignored) {
             return false;
         }
@@ -878,15 +855,14 @@ public final class RecipeTreeTransfer {
         // count is honoured before crafting or recursive output extraction.
         if (batches > 1 && !containsFluidInput(layout.getRecipeSlotsView())) {
             Boolean exact = transferExactInputs(
-                handler.get(),
-                menu,
-                layout.getRecipe(),
-                layout.getRecipeSlotsView(),
-                selectedInputs,
-                batches,
-                player,
-                recursiveCandidates
-            );
+                    handler.get(),
+                    menu,
+                    layout.getRecipe(),
+                    layout.getRecipeSlotsView(),
+                    selectedInputs,
+                    batches,
+                    player,
+                    recursiveCandidates);
             if (exact != null) {
                 return exact;
             }
@@ -894,8 +870,7 @@ public final class RecipeTreeTransfer {
 
         try {
             IRecipeTransferError error = handler.get().transferRecipe(
-                menu, layout.getRecipe(), slots, player, maxTransfer, true
-            );
+                    menu, layout.getRecipe(), slots, player, maxTransfer, true);
             return error == null || error.getType().allowsTransfer;
         } catch (RuntimeException ignored) {
             return false;
@@ -904,23 +879,22 @@ public final class RecipeTreeTransfer {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static Boolean transferExactInputs(
-        IRecipeTransferHandler handler,
-        AbstractContainerMenu menu,
-        Object recipe,
-        IRecipeSlotsView slotsView,
-        List<String> selectedInputs,
-        int batches,
-        Player player,
-        boolean recursiveCandidates
-    ) {
+            IRecipeTransferHandler handler,
+            AbstractContainerMenu menu,
+            Object recipe,
+            IRecipeSlotsView slotsView,
+            List<String> selectedInputs,
+            int batches,
+            Player player,
+            boolean recursiveCandidates) {
         TransferSlots transferSlots = findTransferSlots(handler, menu, recipe);
         if (transferSlots == null) {
             return null;
         }
 
         List<IRecipeSlotView> inputViews = slotsView.getSlotViews().stream()
-            .filter(slot -> slot.getRole() == RecipeIngredientRole.INPUT)
-            .toList();
+                .filter(slot -> slot.getRole() == RecipeIngredientRole.INPUT)
+                .toList();
         if (inputViews.size() > transferSlots.recipeSlots().size()) {
             return null;
         }
@@ -929,9 +903,8 @@ public final class RecipeTreeTransfer {
         for (int i = 0; i < inputViews.size(); i++) {
             IRecipeSlotView input = inputViews.get(i);
             Optional<ItemStack> perBatch = selectedInput(input,
-                i < selectedInputs.size() ? selectedInputs.get(i) : "",
-                recursiveCandidates
-            );
+                    i < selectedInputs.size() ? selectedInputs.get(i) : "",
+                    recursiveCandidates);
             if (perBatch.isEmpty()) {
                 continue;
             }
@@ -944,10 +917,9 @@ public final class RecipeTreeTransfer {
                 return null;
             }
             requirements.add(new InputRequirement(
-                target,
-                perBatch.get(),
-                (int) amount
-            ));
+                    target,
+                    perBatch.get(),
+                    (int) amount));
         }
 
         if (requirements.isEmpty()) {
@@ -966,8 +938,7 @@ public final class RecipeTreeTransfer {
                     return false;
                 }
                 Minecraft.getInstance().gameMode.handleInventoryMouseClick(
-                    menu.containerId, slot.index, 0, ClickType.QUICK_MOVE, player
-                );
+                        menu.containerId, slot.index, 0, ClickType.QUICK_MOVE, player);
             }
         }
 
@@ -975,16 +946,16 @@ public final class RecipeTreeTransfer {
             int remaining = requirement.count();
             while (remaining > 0) {
                 Slot source = transferSlots.inventorySlots().stream()
-                    .filter(slot -> !slot.getItem().isEmpty())
-                    .filter(slot -> RecipeTreeData.ingredientKey(slot.getItem())
-                        .equals(RecipeTreeData.ingredientKey(requirement.stack())))
-                    .findFirst()
-                    .orElse(null);
+                        .filter(slot -> !slot.getItem().isEmpty())
+                        .filter(slot -> RecipeTreeData.ingredientKey(slot.getItem())
+                                .equals(RecipeTreeData.ingredientKey(requirement.stack())))
+                        .findFirst()
+                        .orElse(null);
                 if (source == null) {
                     return false;
                 }
                 int capacity = requirement.target().getMaxStackSize(requirement.stack())
-                    - requirement.target().getItem().getCount();
+                        - requirement.target().getItem().getCount();
                 int move = Math.min(remaining, Math.min(source.getItem().getCount(), capacity));
                 if (move <= 0 || !moveItems(menu, player, source, requirement.target(), move)) {
                     return false;
@@ -996,32 +967,29 @@ public final class RecipeTreeTransfer {
     }
 
     private static Optional<ItemStack> selectedInput(
-        IRecipeSlotView slot,
-        String selectedKey,
-        boolean recursiveCandidates
-    ) {
+            IRecipeSlotView slot,
+            String selectedKey,
+            boolean recursiveCandidates) {
         String preferred = preferredInputKey(slot, selectedKey, recursiveCandidates);
         return slot.getItemStacks()
-            .filter(stack -> !stack.isEmpty())
-            .filter(stack -> preferred.isEmpty() || RecipeTreeData.ingredientKey(stack).equals(preferred))
-            .findFirst()
-            .map(ItemStack::copy);
+                .filter(stack -> !stack.isEmpty())
+                .filter(stack -> preferred.isEmpty() || RecipeTreeData.ingredientKey(stack).equals(preferred))
+                .findFirst()
+                .map(ItemStack::copy);
     }
 
     private static boolean hasExactSupply(
-        List<InputRequirement> requirements,
-        List<Slot> inventorySlots,
-        List<Slot> recipeSlots
-    ) {
+            List<InputRequirement> requirements,
+            List<Slot> inventorySlots,
+            List<Slot> recipeSlots) {
         java.util.Map<String, Long> available = new HashMap<>();
         Stream.concat(inventorySlots.stream(), recipeSlots.stream())
-            .map(Slot::getItem)
-            .filter(stack -> !stack.isEmpty())
-            .forEach(stack -> available.merge(
-                RecipeTreeData.ingredientKey(stack),
-                (long) stack.getCount(),
-                Long::sum
-            ));
+                .map(Slot::getItem)
+                .filter(stack -> !stack.isEmpty())
+                .forEach(stack -> available.merge(
+                        RecipeTreeData.ingredientKey(stack),
+                        (long) stack.getCount(),
+                        Long::sum));
         for (InputRequirement requirement : requirements) {
             String key = RecipeTreeData.ingredientKey(requirement.stack());
             long count = available.getOrDefault(key, 0L);
@@ -1034,12 +1002,11 @@ public final class RecipeTreeTransfer {
     }
 
     private static boolean moveItems(
-        AbstractContainerMenu menu,
-        Player player,
-        Slot source,
-        Slot target,
-        int count
-    ) {
+            AbstractContainerMenu menu,
+            Player player,
+            Slot source,
+            Slot target,
+            int count) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.gameMode == null || !menu.getCarried().isEmpty()) {
             return false;
@@ -1055,16 +1022,18 @@ public final class RecipeTreeTransfer {
 
         int placed = Math.min(count, menu.getCarried().getCount());
         boolean canPlaceAll = target.getItem().isEmpty()
-            && placed == menu.getCarried().getCount()
-            && target.getMaxStackSize(menu.getCarried()) >= placed;
+                && placed == menu.getCarried().getCount()
+                && target.getMaxStackSize(menu.getCarried()) >= placed;
         if (canPlaceAll) {
             minecraft.gameMode.handleInventoryMouseClick(menu.containerId, target.index, 0, ClickType.PICKUP, player);
         } else {
             for (int i = 0; i < placed; i++) {
-                minecraft.gameMode.handleInventoryMouseClick(menu.containerId, target.index, 1, ClickType.PICKUP, player);
+                minecraft.gameMode.handleInventoryMouseClick(menu.containerId, target.index, 1, ClickType.PICKUP,
+                        player);
             }
             if (!menu.getCarried().isEmpty()) {
-                minecraft.gameMode.handleInventoryMouseClick(menu.containerId, source.index, 0, ClickType.PICKUP, player);
+                minecraft.gameMode.handleInventoryMouseClick(menu.containerId, source.index, 0, ClickType.PICKUP,
+                        player);
             }
         }
         return menu.getCarried().isEmpty() && target.getItem().getCount() >= placed;
@@ -1072,17 +1041,15 @@ public final class RecipeTreeTransfer {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static TransferSlots findTransferSlots(
-        IRecipeTransferHandler handler,
-        AbstractContainerMenu menu,
-        Object recipe
-    ) {
+            IRecipeTransferHandler handler,
+            AbstractContainerMenu menu,
+            Object recipe) {
         if (handler instanceof BasicRecipeTransferHandlerAccessor accessor) {
             try {
                 IRecipeTransferInfo info = accessor.jeiPlusPlus$getTransferInfo();
                 return new TransferSlots(
-                    List.copyOf(info.getRecipeSlots(menu, recipe)),
-                    List.copyOf(info.getInventorySlots(menu, recipe))
-                );
+                        List.copyOf(info.getRecipeSlots(menu, recipe)),
+                        List.copyOf(info.getInventorySlots(menu, recipe)));
             } catch (RuntimeException ignored) {
                 return null;
             }
@@ -1096,9 +1063,8 @@ public final class RecipeTreeTransfer {
                     field.setAccessible(true);
                     IRecipeTransferInfo info = (IRecipeTransferInfo) field.get(handler);
                     return new TransferSlots(
-                        List.copyOf(info.getRecipeSlots(menu, recipe)),
-                        List.copyOf(info.getInventorySlots(menu, recipe))
-                    );
+                            List.copyOf(info.getRecipeSlots(menu, recipe)),
+                            List.copyOf(info.getInventorySlots(menu, recipe)));
                 } catch (ReflectiveOperationException | RuntimeException ignored) {
                     return null;
                 }
@@ -1139,8 +1105,8 @@ public final class RecipeTreeTransfer {
         for (int depth = 0; depth < 6; depth++) {
             Screen screen = minecraft.screen;
             if (screen == null
-                || screen instanceof AbstractContainerScreen<?>
-                || !screen.getClass().getName().contains("RecipesGui")) {
+                    || screen instanceof AbstractContainerScreen<?>
+                    || !screen.getClass().getName().contains("RecipesGui")) {
                 return;
             }
             screen.onClose();
@@ -1204,21 +1170,19 @@ public final class RecipeTreeTransfer {
     }
 
     private static IRecipeSlotsView adjustInputs(
-        IRecipeSlotsView original,
-        List<String> selectedInputs,
-        int batches,
-        boolean recursiveCandidates,
-        Player player
-    ) {
+            IRecipeSlotsView original,
+            List<String> selectedInputs,
+            int batches,
+            boolean recursiveCandidates,
+            Player player) {
         List<IRecipeSlotView> adjusted = new ArrayList<>();
         int inputIndex = 0;
         for (IRecipeSlotView slot : original.getSlotViews()) {
             if (slot.getRole() == RecipeIngredientRole.INPUT) {
                 String selected = preferredInputKey(
-                    slot,
-                    inputIndex < selectedInputs.size() ? selectedInputs.get(inputIndex) : "",
-                    recursiveCandidates
-                );
+                        slot,
+                        inputIndex < selectedInputs.size() ? selectedInputs.get(inputIndex) : "",
+                        recursiveCandidates);
                 adjusted.add(new AdjustedSlot(slot, selected, batches, player));
                 inputIndex++;
             } else {
@@ -1231,16 +1195,15 @@ public final class RecipeTreeTransfer {
 
     private static boolean containsFluidInput(IRecipeSlotsView slots) {
         return slots.getSlotViews().stream()
-            .filter(slot -> slot.getRole() == RecipeIngredientRole.INPUT)
-            .flatMap(IRecipeSlotView::getAllIngredients)
-            .anyMatch(ingredient -> FluidRecipeCompat.fluid(ingredient).isPresent());
+                .filter(slot -> slot.getRole() == RecipeIngredientRole.INPUT)
+                .flatMap(IRecipeSlotView::getAllIngredients)
+                .anyMatch(ingredient -> FluidRecipeCompat.fluid(ingredient).isPresent());
     }
 
     private static int maxBatchesPerTransfer(
-        IRecipeSlotsView slots,
-        List<String> selectedInputs,
-        boolean recursiveCandidates
-    ) {
+            IRecipeSlotsView slots,
+            List<String> selectedInputs,
+            boolean recursiveCandidates) {
         int result = Integer.MAX_VALUE;
         int inputIndex = 0;
         boolean foundItemInput = false;
@@ -1249,16 +1212,15 @@ public final class RecipeTreeTransfer {
                 continue;
             }
             String selected = preferredInputKey(
-                slot,
-                inputIndex < selectedInputs.size() ? selectedInputs.get(inputIndex) : "",
-                recursiveCandidates
-            );
+                    slot,
+                    inputIndex < selectedInputs.size() ? selectedInputs.get(inputIndex) : "",
+                    recursiveCandidates);
             inputIndex++;
             int slotCapacity = RecipeTreeData.candidateStacks(slot).stream()
-                .filter(stack -> selected.isEmpty() || RecipeTreeData.ingredientKey(stack).equals(selected))
-                .mapToInt(stack -> Math.max(1, stack.getMaxStackSize() / Math.max(1, stack.getCount())))
-                .max()
-                .orElse(Integer.MAX_VALUE);
+                    .filter(stack -> selected.isEmpty() || RecipeTreeData.ingredientKey(stack).equals(selected))
+                    .mapToInt(stack -> Math.max(1, stack.getMaxStackSize() / Math.max(1, stack.getCount())))
+                    .max()
+                    .orElse(Integer.MAX_VALUE);
             if (slotCapacity != Integer.MAX_VALUE) {
                 foundItemInput = true;
                 result = Math.min(result, slotCapacity);
@@ -1275,10 +1237,9 @@ public final class RecipeTreeTransfer {
      * a concrete candidate at transfer time instead.
      */
     private static String preferredInputKey(
-        IRecipeSlotView slot,
-        String selectedKey,
-        boolean recursiveCandidates
-    ) {
+            IRecipeSlotView slot,
+            String selectedKey,
+            boolean recursiveCandidates) {
         if (!selectedKey.isEmpty()) {
             return selectedKey;
         }
@@ -1288,9 +1249,9 @@ public final class RecipeTreeTransfer {
         // first-candidate fallback.
         return RecipeTreeData.findCandidateWithSupply(
                 RecipeTreeData.candidateStacks(slot),
-            recursiveCandidates && RecipeTreeSession.tree() != null)
-            .map(RecipeTreeData::ingredientKey)
-            .orElse("");
+                recursiveCandidates && RecipeTreeSession.tree() != null)
+                .map(RecipeTreeData::ingredientKey)
+                .orElse("");
     }
 
     private static int instantResultSlot(AbstractContainerMenu menu) {
@@ -1298,10 +1259,14 @@ public final class RecipeTreeTransfer {
         if (networkResult >= 0) {
             return networkResult;
         }
-        if (menu instanceof CraftingMenu || menu instanceof InventoryMenu) return 0;
-        if (menu instanceof StonecutterMenu) return 1;
-        if (menu instanceof SmithingMenu || menu instanceof LoomMenu) return 3;
-        if (menu instanceof CartographyTableMenu || menu instanceof GrindstoneMenu) return 2;
+        if (menu instanceof CraftingMenu || menu instanceof InventoryMenu)
+            return 0;
+        if (menu instanceof StonecutterMenu)
+            return 1;
+        if (menu instanceof SmithingMenu || menu instanceof LoomMenu)
+            return 3;
+        if (menu instanceof CartographyTableMenu || menu instanceof GrindstoneMenu)
+            return 2;
         return -1;
     }
 
@@ -1312,12 +1277,11 @@ public final class RecipeTreeTransfer {
      * server packet or submitting an AE autocrafting job.
      */
     private static Boolean tryNetworkCraftingTransfer(
-        AbstractContainerMenu menu,
-        IRecipeLayoutDrawable<?> layout,
-        List<String> selectedInputs,
-        boolean doTransfer,
-        boolean recursiveCandidates
-    ) {
+            AbstractContainerMenu menu,
+            IRecipeLayoutDrawable<?> layout,
+            List<String> selectedInputs,
+            boolean doTransfer,
+            boolean recursiveCandidates) {
         if (!(layout.getRecipe() instanceof CraftingRecipe)) {
             return null;
         }
@@ -1329,13 +1293,12 @@ public final class RecipeTreeTransfer {
     }
 
     private static List<ItemStack> ae2Templates(
-        IRecipeLayoutDrawable<?> layout,
-        List<String> selectedInputs,
-        boolean recursiveCandidates
-    ) {
+            IRecipeLayoutDrawable<?> layout,
+            List<String> selectedInputs,
+            boolean recursiveCandidates) {
         List<IRecipeSlotView> inputs = layout.getRecipeSlotsView().getSlotViews().stream()
-            .filter(slot -> slot.getRole() == RecipeIngredientRole.INPUT)
-            .toList();
+                .filter(slot -> slot.getRole() == RecipeIngredientRole.INPUT)
+                .toList();
         if (inputs.size() != 9) {
             return null;
         }
@@ -1344,16 +1307,15 @@ public final class RecipeTreeTransfer {
         for (int index = 0; index < inputs.size(); index++) {
             IRecipeSlotView input = inputs.get(index);
             String selected = preferredInputKey(
-                input,
-                index < selectedInputs.size() ? selectedInputs.get(index) : "",
-                recursiveCandidates
-            );
+                    input,
+                    index < selectedInputs.size() ? selectedInputs.get(index) : "",
+                    recursiveCandidates);
             ItemStack template = RecipeTreeData.candidateStacks(input).stream()
-                .filter(stack -> !stack.isEmpty())
-                .filter(stack -> selected.isEmpty() || RecipeTreeData.ingredientKey(stack).equals(selected))
-                .findFirst()
-                .map(ItemStack::copy)
-                .orElse(ItemStack.EMPTY);
+                    .filter(stack -> !stack.isEmpty())
+                    .filter(stack -> selected.isEmpty() || RecipeTreeData.ingredientKey(stack).equals(selected))
+                    .findFirst()
+                    .map(ItemStack::copy)
+                    .orElse(ItemStack.EMPTY);
             if (!template.isEmpty()) {
                 template.setCount(1);
             }
@@ -1418,20 +1380,20 @@ public final class RecipeTreeTransfer {
                         // Preserve FluidStack ingredients for custom tank
                         // handlers and add matching filled containers for
                         // handlers that expose an item input slot instead.
-                        Optional<net.minecraftforge.fluids.FluidStack> fluid =
-                            FluidRecipeCompat.fluid(ingredient);
+                        Optional<net.minecraftforge.fluids.FluidStack> fluid = FluidRecipeCompat.fluid(ingredient);
                         if (fluid.isPresent()) {
                             String fluidKey = FluidRecipeCompat.fluidKey(fluid.get());
                             if (selectedKey.isEmpty() || selectedKey.equals(fluidKey)) {
                                 FluidRecipeCompat.scaled(ingredient, batches, runtime.getIngredientManager())
-                                    .ifPresent(adjusted::add);
-                            }
-                            for (ItemStack container : FluidRecipeCompat.matchingContainers(player, fluid.get(), batches)) {
-                                if (selectedKey.isEmpty()
-                                    || RecipeTreeData.ingredientKey(container).equals(selectedKey)) {
-                                    runtime.getIngredientManager()
-                                        .createTypedIngredient(VanillaTypes.ITEM_STACK, container)
                                         .ifPresent(adjusted::add);
+                            }
+                            for (ItemStack container : FluidRecipeCompat.matchingContainers(player, fluid.get(),
+                                    batches)) {
+                                if (selectedKey.isEmpty()
+                                        || RecipeTreeData.ingredientKey(container).equals(selectedKey)) {
+                                    runtime.getIngredientManager()
+                                            .createTypedIngredient(VanillaTypes.ITEM_STACK, container)
+                                            .ifPresent(adjusted::add);
                                 }
                             }
                         } else {
@@ -1450,13 +1412,13 @@ public final class RecipeTreeTransfer {
                     }
                     scaled.setCount((int) count);
                     runtime.getIngredientManager()
-                        .createTypedIngredient(VanillaTypes.ITEM_STACK, scaled)
-                        .ifPresent(adjusted::add);
+                            .createTypedIngredient(VanillaTypes.ITEM_STACK, scaled)
+                            .ifPresent(adjusted::add);
                 });
             }
             this.ingredients = adjusted.isEmpty()
-                ? delegate.getAllIngredients().toList()
-                : List.copyOf(adjusted);
+                    ? delegate.getAllIngredients().toList()
+                    : List.copyOf(adjusted);
         }
 
         @Override
@@ -1484,8 +1446,17 @@ public final class RecipeTreeTransfer {
             return Optional.empty();
         }
 
-        @Override public RecipeIngredientRole getRole() { return delegate.getRole(); }
-        @Override public void drawHighlight(GuiGraphics graphics, int color) { delegate.drawHighlight(graphics, color); }
-        @Override public Optional<String> getSlotName() { return delegate.getSlotName(); }
+        @Override
+        public RecipeIngredientRole getRole() {
+            return delegate.getRole();
+        }
+        @Override
+        public void drawHighlight(GuiGraphics graphics, int color) {
+            delegate.drawHighlight(graphics, color);
+        }
+        @Override
+        public Optional<String> getSlotName() {
+            return delegate.getSlotName();
+        }
     }
 }

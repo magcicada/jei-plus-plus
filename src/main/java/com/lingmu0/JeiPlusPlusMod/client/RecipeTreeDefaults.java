@@ -34,9 +34,7 @@ public final class RecipeTreeDefaults {
     }
 
     public enum Status {
-        EMPTY,
-        PARTIAL,
-        FULL
+        EMPTY, PARTIAL, FULL
     }
 
     public static void reload() {
@@ -50,9 +48,8 @@ public final class RecipeTreeDefaults {
     }
 
     public static RecipeTreeData.RecipeRef getPreferredRecipe(
-        ItemStack output,
-        List<RecipeTreeData.RecipeRef> candidates
-    ) {
+            ItemStack output,
+            List<RecipeTreeData.RecipeRef> candidates) {
         ensureLoaded();
         String ingredientKey = RecipeTreeData.ingredientKey(output);
         String resolution = RESOLUTIONS.get(ingredientKey);
@@ -65,9 +62,9 @@ public final class RecipeTreeDefaults {
         }
         for (RecipeTreeData.RecipeRef candidate : candidates) {
             if (!candidate.registryId().isEmpty()
-                && BUILTIN_RECIPE_IDS.contains(candidate.registryId())
-                && !isNuggetToIngot(candidate.registryId())
-                && !DISABLED_RECIPES.contains(candidate.key())) {
+                    && BUILTIN_RECIPE_IDS.contains(candidate.registryId())
+                    && !isNuggetToIngot(candidate.registryId())
+                    && !DISABLED_RECIPES.contains(candidate.key())) {
                 return candidate;
             }
         }
@@ -135,9 +132,8 @@ public final class RecipeTreeDefaults {
 
     private static void loadBuiltins() {
         try (Reader reader = new InputStreamReader(
-            RecipeTreeDefaults.class.getResourceAsStream(BUILTIN_RESOURCE),
-            StandardCharsets.UTF_8
-        )) {
+                RecipeTreeDefaults.class.getResourceAsStream(BUILTIN_RESOURCE),
+                StandardCharsets.UTF_8)) {
             JsonObject root = GSON.fromJson(reader, JsonObject.class);
             JsonArray added = root == null ? null : root.getAsJsonArray("added");
             if (added != null) {
@@ -195,8 +191,8 @@ public final class RecipeTreeDefaults {
             JsonObject root = new JsonObject();
             JsonObject resolutions = new JsonObject();
             RESOLUTIONS.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> resolutions.addProperty(entry.getKey(), entry.getValue()));
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> resolutions.addProperty(entry.getKey(), entry.getValue()));
             root.add("resolutions", resolutions);
             JsonArray disabled = new JsonArray();
             DISABLED_RECIPES.stream().sorted().forEach(disabled::add);
@@ -211,9 +207,9 @@ public final class RecipeTreeDefaults {
 
     private static Path file() {
         return Minecraft.getInstance().gameDirectory.toPath()
-            .resolve("config")
-            .resolve("jei_plus_plus")
-            .resolve("recipe_defaults.json");
+                .resolve("config")
+                .resolve("jei_plus_plus")
+                .resolve("recipe_defaults.json");
     }
 
     /**

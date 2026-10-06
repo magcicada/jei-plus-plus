@@ -15,17 +15,15 @@ import java.util.Optional;
 
 /** Runtime bridge for JEI's changing tag-content tooltip component. */
 final class JeiTooltipCompat {
-    private static final String TAG_CONTENT_COMPONENT =
-        "mezz.jei.library.gui.ingredients.TagContentTooltipComponent";
+    private static final String TAG_CONTENT_COMPONENT = "mezz.jei.library.gui.ingredients.TagContentTooltipComponent";
 
     private JeiTooltipCompat() {
     }
 
     static Optional<TooltipComponent> createTagContent(
-        IJeiRuntime runtime,
-        IIngredientRenderer<ItemStack> renderer,
-        List<ItemStack> alternatives
-    ) {
+            IJeiRuntime runtime,
+            IIngredientRenderer<ItemStack> renderer,
+            List<ItemStack> alternatives) {
         if (runtime == null || renderer == null || alternatives == null || alternatives.isEmpty()) {
             return Optional.empty();
         }
@@ -38,7 +36,7 @@ final class JeiTooltipCompat {
                     continue;
                 }
                 manager.createTypedIngredient(VanillaTypes.ITEM_STACK, stack)
-                    .ifPresent(value -> typed.add((ITypedIngredient<?>) value));
+                        .ifPresent(value -> typed.add((ITypedIngredient<?>) value));
             }
             for (Constructor<?> constructor : componentType.getDeclaredConstructors()) {
                 Class<?>[] parameters = constructor.getParameterTypes();

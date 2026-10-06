@@ -11,12 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Pseudo
 @Mixin(targets = "org.cyclops.integratedterminals.core.terminalstorage.TerminalStorageTabIngredientComponentClient", remap = false)
 public abstract class IntegratedTerminalStorageMixin {
-    @Inject(
-        method = {"onChange", "resetFilteredIngredientsViews", "setInstanceFilter", "handleActiveIngredientUpdate"},
-        at = @At("TAIL"),
-        remap = false,
-        require = 0
-    )
+    @Inject(method = {"onChange", "resetFilteredIngredientsViews", "setInstanceFilter",
+            "handleActiveIngredientUpdate"}, at = @At("TAIL"), remap = false, require = 0)
     private void jeiPlusPlus$prioritizeAfterStorageUpdate(CallbackInfo ci) {
         RecipeTreeFavorites.applyCurrentNetworkPriority();
     }

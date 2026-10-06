@@ -15,11 +15,11 @@ import net.minecraft.world.item.Items;
 
 /**
  * A compact, paged directory used when a recipe slot contains many
- * alternatives.  JEI provides the outer page navigation for the chunks.
+ * alternatives. JEI provides the outer page navigation for the chunks.
  */
 public final class DirectoryRecipeCategory implements IRecipeCategory<DirectoryRecipe> {
-    public static final RecipeType<DirectoryRecipe> TYPE =
-        RecipeType.create(JeiPlusPlus.MODID, "ingredient_directory", DirectoryRecipe.class);
+    public static final RecipeType<DirectoryRecipe> TYPE = RecipeType.create(JeiPlusPlus.MODID, "ingredient_directory",
+            DirectoryRecipe.class);
 
     private static final int COLUMNS = 9;
     private static final int ROWS = 9;
@@ -73,13 +73,14 @@ public final class DirectoryRecipeCategory implements IRecipeCategory<DirectoryR
             int x = 3 + (i % COLUMNS) * SLOT_SPACING;
             int y = 3 + (i / COLUMNS) * SLOT_SPACING;
             builder.addSlot(RecipeIngredientRole.INPUT, x, y)
-                .addTypedIngredient(ingredients.get(i))
-                .setStandardSlotBackground();
+                    .addTypedIngredient(ingredients.get(i))
+                    .setStandardSlotBackground();
         }
     }
 
     @Override
-    public void draw(DirectoryRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics, double mouseX, double mouseY) {
+    public void draw(DirectoryRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics, double mouseX,
+            double mouseY) {
         // The category intentionally consists only of the standard JEI slots.
     }
 }

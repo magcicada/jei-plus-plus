@@ -38,10 +38,9 @@ final class FluidRecipeCompat {
     private static final IdentityHashMap<ItemStack, FluidStack> DISPLAY_FLUIDS = new IdentityHashMap<>();
     private static final Map<String, ItemStack> FLUID_REPRESENTATIONS = new ConcurrentHashMap<>();
     private static final List<String> FLUID_ACCESSOR_NAMES = List.of(
-        "getFluidStack", "getReadOnlyStack", "getRenderStack", "getStack",
-        "toFluidStack", "toStack", "getInstance", "getIngredient", "getResource",
-        "getFluidResource", "getFluid", "fluid", "getWhat", "getKey", "getSource"
-    );
+            "getFluidStack", "getReadOnlyStack", "getRenderStack", "getStack",
+            "toFluidStack", "toStack", "getInstance", "getIngredient", "getResource",
+            "getFluidResource", "getFluid", "fluid", "getWhat", "getKey", "getSource");
     private static final Map<Class<?>, List<Method>> FLUID_ACCESSORS = new ConcurrentHashMap<>();
 
     private FluidRecipeCompat() {
@@ -65,21 +64,18 @@ final class FluidRecipeCompat {
                 return Optional.empty();
             }
             return Optional.of(new FluidInfo(
-                "fluid:" + BuiltInRegistries.FLUID.getKey(stack.getFluid()),
-                Math.max(0L, stack.getAmount())
-            ));
+                    "fluid:" + BuiltInRegistries.FLUID.getKey(stack.getFluid()),
+                    Math.max(0L, stack.getAmount())));
         }
         if (value instanceof ItemStack stack) {
             return displayFluid(stack).map(fluid -> new FluidInfo(
-                "fluid:" + BuiltInRegistries.FLUID.getKey(fluid.getFluid()),
-                Math.max(0L, fluid.getAmount())
-            ));
+                    "fluid:" + BuiltInRegistries.FLUID.getKey(fluid.getFluid()),
+                    Math.max(0L, fluid.getAmount())));
         }
         if (value instanceof Fluid fluid) {
             return Optional.of(new FluidInfo(
-                "fluid:" + BuiltInRegistries.FLUID.getKey(fluid),
-                0L
-            ));
+                    "fluid:" + BuiltInRegistries.FLUID.getKey(fluid),
+                    0L));
         }
         for (Method method : FLUID_ACCESSORS.computeIfAbsent(value.getClass(), FluidRecipeCompat::findFluidAccessors)) {
             try {
@@ -120,15 +116,14 @@ final class FluidRecipeCompat {
 
     static Optional<FluidStack> fluid(ITypedIngredient<?> ingredient) {
         return ingredient == null
-            ? Optional.empty()
-            : ingredient.getIngredient(ForgeTypes.FLUID_STACK);
+                ? Optional.empty()
+                : ingredient.getIngredient(ForgeTypes.FLUID_STACK);
     }
 
     static Optional<ITypedIngredient<?>> scaled(
-        ITypedIngredient<?> ingredient,
-        int batches,
-        IIngredientManager manager
-    ) {
+            ITypedIngredient<?> ingredient,
+            int batches,
+            IIngredientManager manager) {
         Optional<FluidStack> value = fluid(ingredient);
         if (value.isEmpty() || batches <= 1) {
             return Optional.ofNullable(ingredient);
@@ -140,7 +135,7 @@ final class FluidRecipeCompat {
         FluidStack copy = value.get().copy();
         copy.setAmount((int) amount);
         return manager.createTypedIngredient(ForgeTypes.FLUID_STACK, copy)
-            .map(stack -> (ITypedIngredient<?>) stack);
+                .map(stack -> (ITypedIngredient<?>) stack);
     }
 
     static List<ItemStack> matchingContainers(Player player, FluidStack required, int batches) {
@@ -152,7 +147,8 @@ final class FluidRecipeCompat {
             if (inventoryStack.isEmpty()) {
                 continue;
             }
-            IFluidHandler handler = inventoryStack.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).resolve().orElse(null);
+            IFluidHandler handler = inventoryStack.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).resolve()
+                    .orElse(null);
             if (handler == null) {
                 continue;
             }
@@ -162,7 +158,7 @@ final class FluidRecipeCompat {
             }
             int perContainer = Math.max(1, contained.getAmount());
             int containers = (int) Math.min(Integer.MAX_VALUE,
-                Math.max(1L, ((long) requiredAmount + perContainer - 1L) / perContainer));
+                    Math.max(1L, ((long) requiredAmount + perContainer - 1L) / perContainer));
             if (containers <= inventoryStack.getCount()) {
                 ItemStack candidate = inventoryStack.copy();
                 candidate.setCount(containers);
@@ -174,8 +170,8 @@ final class FluidRecipeCompat {
 
     static List<ItemStack> matchingContainers(Player player, ITypedIngredient<?> ingredient) {
         return fluid(ingredient)
-            .map(value -> matchingContainers(player, value, 1))
-            .orElseGet(List::of);
+                .map(value -> matchingContainers(player, value, 1))
+                .orElseGet(List::of);
     }
 
     static Optional<ItemStack> representativeContainer(ITypedIngredient<?> ingredient) {
@@ -191,9 +187,11 @@ final class FluidRecipeCompat {
         }).filter(stack -> !stack.isEmpty());
     }
 
-    /** A real bucket/item candidate for a fluid ingredient. It deliberately
+    /**
+     * A real bucket/item candidate for a fluid ingredient. It deliberately
      * has no display registration, so its ingredient key remains the bucket
-     * item rather than the synthetic fluid key. */
+     * item rather than the synthetic fluid key.
+     */
     static Optional<ItemStack> containerCandidate(ITypedIngredient<?> ingredient) {
         return fluid(ingredient).map(value -> {
             var bucketItem = value.getFluid().getBucket();
@@ -229,7 +227,7 @@ final class FluidRecipeCompat {
             probe.setCount(1);
         }
         IFluidHandler handler = probe.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM)
-            .resolve().orElse(null);
+                .resolve().orElse(null);
         if (handler != null) {
             FluidStack contained = handler.drain(Integer.MAX_VALUE, IFluidHandler.FluidAction.SIMULATE);
             if (contained != null && !contained.isEmpty()) {
@@ -254,16 +252,18 @@ final class FluidRecipeCompat {
 
     static String fluidKey(FluidStack value) {
         return value == null || value.isEmpty()
-            ? ""
-            : "fluid:" + net.minecraft.core.registries.BuiltInRegistries.FLUID.getKey(value.getFluid());
+                ? ""
+                : "fluid:" + net.minecraft.core.registries.BuiltInRegistries.FLUID.getKey(value.getFluid());
     }
 
-    /** Returns the fluid key carried by a real container without converting it
-     * into a synthetic tree stack. Used by inventory highlighting only. */
+    /**
+     * Returns the fluid key carried by a real container without converting it
+     * into a synthetic tree stack. Used by inventory highlighting only.
+     */
     static Optional<String> displayFluidKey(ItemStack stack) {
         return displayFluid(stack)
-            .map(FluidRecipeCompat::fluidKey)
-            .filter(key -> !key.isEmpty());
+                .map(FluidRecipeCompat::fluidKey)
+                .filter(key -> !key.isEmpty());
     }
 
     /** Creates a fluid-key alias for a real filled container in inventory. */
@@ -282,15 +282,15 @@ final class FluidRecipeCompat {
         Optional<FluidStack> fluid = treeFluid(stack);
         if (fluid.isPresent()) {
             return manager.createTypedIngredient(ForgeTypes.FLUID_STACK, fluid.get())
-                .map(value -> (ITypedIngredient<?>) value);
+                    .map(value -> (ITypedIngredient<?>) value);
         }
         return manager.createTypedIngredient(VanillaTypes.ITEM_STACK, stack)
-            .map(value -> (ITypedIngredient<?>) value);
+                .map(value -> (ITypedIngredient<?>) value);
     }
 
     static long containerCount(long millibuckets) {
         return Math.max(1, (millibuckets + net.minecraftforge.fluids.FluidType.BUCKET_VOLUME - 1)
-            / net.minecraftforge.fluids.FluidType.BUCKET_VOLUME);
+                / net.minecraftforge.fluids.FluidType.BUCKET_VOLUME);
     }
 
     /** Returns the actual fluid amount represented by every item in a stack. */
@@ -304,9 +304,8 @@ final class FluidRecipeCompat {
         }
         try {
             return Math.multiplyExact(
-                Math.max(0L, fluid.get().getAmount()),
-                Math.max(1L, stack.getCount())
-            );
+                    Math.max(0L, fluid.get().getAmount()),
+                    Math.max(1L, stack.getCount()));
         } catch (ArithmeticException overflow) {
             return Long.MAX_VALUE;
         }
@@ -343,7 +342,7 @@ final class FluidRecipeCompat {
 
     /**
      * Converts the tree's synthetic container units back to the amount of
-     * fluid represented by the original recipe slot.  A recipe slot carrying
+     * fluid represented by the original recipe slot. A recipe slot carrying
      * 1500 mB is represented by two containers, so two tree units correspond
      * to 1500 mB rather than 3000 mB.
      */
@@ -375,7 +374,7 @@ final class FluidRecipeCompat {
             return value + "mB";
         }
         return String.format(Locale.ROOT, "%.1fB",
-            value / (double) net.minecraftforge.fluids.FluidType.BUCKET_VOLUME);
+                value / (double) net.minecraftforge.fluids.FluidType.BUCKET_VOLUME);
     }
 
     static Optional<IFocus<FluidStack>> createOutputFocus(IJeiRuntime runtime, ItemStack stack) {
@@ -385,10 +384,9 @@ final class FluidRecipeCompat {
         }
         try {
             return Optional.of(runtime.getJeiHelpers().getFocusFactory().createFocus(
-                RecipeIngredientRole.OUTPUT,
-                ForgeTypes.FLUID_STACK,
-                value.get()
-            ));
+                    RecipeIngredientRole.OUTPUT,
+                    ForgeTypes.FLUID_STACK,
+                    value.get()));
         } catch (IllegalArgumentException ignored) {
             return Optional.empty();
         }
@@ -411,8 +409,8 @@ final class FluidRecipeCompat {
             return false;
         }
         IIngredientManager manager = DirectoryRecipePlugin.getJeiRuntime() == null
-            ? null
-            : DirectoryRecipePlugin.getJeiRuntime().getIngredientManager();
+                ? null
+                : DirectoryRecipePlugin.getJeiRuntime().getIngredientManager();
         if (manager == null) {
             return false;
         }
@@ -427,8 +425,8 @@ final class FluidRecipeCompat {
             return false;
         }
         IIngredientManager manager = DirectoryRecipePlugin.getJeiRuntime() == null
-            ? null
-            : DirectoryRecipePlugin.getJeiRuntime().getIngredientManager();
+                ? null
+                : DirectoryRecipePlugin.getJeiRuntime().getIngredientManager();
         if (manager == null) {
             return false;
         }

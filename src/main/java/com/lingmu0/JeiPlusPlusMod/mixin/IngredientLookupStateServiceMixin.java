@@ -19,12 +19,11 @@ import java.util.Optional;
 public abstract class IngredientLookupStateServiceMixin {
     @Inject(method = "create", at = @At("RETURN"), remap = false)
     private static void jeiPlusPlus$bookmarkCategoryFirst(
-        IRecipeManager recipeManager,
-        IFocusGroup focusGroup,
-        java.util.List<IRecipeCategory<?>> recipeCategories,
-        RecipeTransferService recipeTransferService,
-        CallbackInfoReturnable<ILookupState> cir
-    ) {
+            IRecipeManager recipeManager,
+            IFocusGroup focusGroup,
+            java.util.List<IRecipeCategory<?>> recipeCategories,
+            RecipeTransferService recipeTransferService,
+            CallbackInfoReturnable<ILookupState> cir) {
         Optional<IRecipeCategory<?>> category = RecipeBookmarkNavigationContext.category();
         if (category.isPresent()) {
             cir.getReturnValue().moveToRecipeCategory(category.get());
