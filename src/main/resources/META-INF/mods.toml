@@ -30,8 +30,8 @@ displayName = "${mod_name}" #mandatory
 #credits="Thanks for this example mod goes to Java" #optional
 # A text field displayed in the mod UI
 authors = "${mod_authors}" #optional
-# JEI++ only adds client-side JEI screens and recipe-tree helpers. A server
-# does not need this mod installed for a client to connect.
+# Core JEI features work client-only. The optional AE2 pattern batch action
+# requires this mod on the server, but a client can still join without it.
 displayTest = "IGNORE_ALL_VERSION"
 # Display Test controls the display for your mod in the server connection screen
 # MATCH_VERSION means that your mod will cause a red X if the versions on client and server differ. This is the default behaviour and should be what you choose if you have server and client elements to your mod.

@@ -40,6 +40,8 @@ JEI++ 是一个仅客户端运行的 JEI 附属模组，为 JEI 增加配方目�
 
 ### 存储网络
 
+AE2 样板终端“制作样板”按钮：Shift+左键按当前配方树自底向上批量制作，并跳过网络中已有的相同编码样板；Ctrl+左键即使已有相同样板也强制制作。未固定候选的合成配方会将整张样板设为“可替换”（AE2 处理样板不支持此开关）。空白样板取自终端空白样板槽，产物进入背包或空的终端输出槽；空白样板耗尽或没有空间时停止。此新增操作要求服务端也安装 JEI++，其他客户端功能不受影响。
+
 可选客户端反射集成支持 AE2、Refined Storage RS1/RS2、超越维度和集成动力/集成终端。网络物品与流体参与配方树候选、数量、配方转移和高亮，并优先显示在终端列表前方；共享快照、修订号和按需扫描避免在非 AE2 终端重复探测 AE2。
 
 转移优先使用终端客户端接口、官方数据包或通用容器点击协议；支持的终端可从网络取材并在背包放不下时回存产物。缺少可选模组、API 变化或不支持的界面会安全跳过。
@@ -123,7 +125,7 @@ JSON 分组示例：
 
 | 游戏版本 | 加载器 | Java | JEI 开发依赖 | 模组版本 |
 | --- | --- | --- | --- | --- |
-| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.59.0.210 | 1.0.6-1.20.1 |
+| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.59.0.210 | 1.0.7-1.20.1 |
 
 声明的 JEI 兼容范围从 15.19.5.99 起，表中版本是当前开发依赖。
 
@@ -147,6 +149,8 @@ Tree bookmarks show final products, intermediates, and base materials on separat
 
 ### Fluids and storage networks
 
+On AE2's Encode button, Shift+left-click creates the selected tree's patterns from leaves to root and skips identical installed patterns. Ctrl+left-click forces creation even if the network already has them. Unpinned alternatives enable substitution for the entire crafting pattern; processing patterns have no substitution switch. Blanks come from the terminal's blank slot, and results go to inventory or the empty output slot. The batch stops when blanks or space run out. This new action requires server-side JEI++; other client-only features remain available without it.
+
 Fluids remain fluids in trees and bookmarks. Explicit bucket recipes stay bucket-based; fluid recipes can use fluid or compatible container candidates. Fluid inputs/outputs, multi-output selection, fluid-capability slots, containers, and network fluid quantities are supported. 1000 mB equals 1 B; actual amounts are displayed without clamping.
 
 Optional reflective client integrations support AE2, Refined Storage RS1/RS2, Beyond Dimensions, and Integrated Dynamics/Integrated Terminals. Network items and fluids participate in planning, counts, highlighting, and transfer and are placed first in supported terminal views. Transfers prefer client APIs, official packets, or generic container clicks, with safe fallback when an integration is unavailable.
@@ -161,7 +165,7 @@ Candidate, per-recipe snapshot, recipe-status, layout, inventory/network, and fl
 
 | Minecraft | Loader | Java | JEI development dependency | Mod version |
 | --- | --- | --- | --- | --- |
-| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.59.0.210 | 1.0.6-1.20.1 |
+| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.59.0.210 | 1.0.7-1.20.1 |
 
 The declared JEI compatibility floor is 15.19.5.99; the table lists the current development dependency.
 

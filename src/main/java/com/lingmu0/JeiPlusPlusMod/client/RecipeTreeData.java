@@ -187,6 +187,10 @@ public final class RecipeTreeData {
             return explicitChoice;
         }
 
+        public List<Integer> inputSlotIndexes() {
+            return inputSlotIndexes;
+        }
+
         public List<Node> children() {
             return children;
         }
