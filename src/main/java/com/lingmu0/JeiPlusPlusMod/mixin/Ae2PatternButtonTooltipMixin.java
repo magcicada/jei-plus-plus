@@ -12,18 +12,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Pseudo
 @Mixin(targets = "appeng.client.gui.WidgetContainer", remap = false)
 public abstract class Ae2PatternButtonTooltipMixin {
-    @Inject(
-        method = "add(Ljava/lang/String;Lnet/minecraft/client/gui/components/AbstractWidget;)V",
-        at = @At("HEAD"),
-        remap = false,
-        require = 0
-    )
+    @Inject(method = "add(Ljava/lang/String;Lnet/minecraft/client/gui/components/AbstractWidget;)V", at = @At("HEAD"), remap = false, require = 0)
     private void jeiPlusPlus$describePatternModifiers(String id, AbstractWidget widget, CallbackInfo ci) {
-        if (!"encodePattern".equals(id)) return;
+        if (!"encodePattern".equals(id))
+            return;
         widget.setMessage(widget.getMessage().copy()
-            .append(Component.literal("\n"))
-            .append(Component.translatable("jei_plus_plus.ae2.shift_hint"))
-            .append(Component.literal("\n"))
-            .append(Component.translatable("jei_plus_plus.ae2.ctrl_hint")));
+                .append(Component.literal("\n"))
+                .append(Component.translatable("jei_plus_plus.ae2.shift_hint"))
+                .append(Component.literal("\n"))
+                .append(Component.translatable("jei_plus_plus.ae2.ctrl_hint")));
     }
 }

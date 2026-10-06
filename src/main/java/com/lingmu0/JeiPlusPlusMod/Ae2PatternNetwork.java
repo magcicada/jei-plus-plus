@@ -24,14 +24,16 @@ public final class Ae2PatternNetwork {
     private static final Map<UUID, Pending> PENDING = new HashMap<>();
     private static final int CHUNK_SIZE = 8;
 
-    private Ae2PatternNetwork() {}
+    private Ae2PatternNetwork() {
+    }
 
     public static void register() {
         CHANNEL.messageBuilder(Request.class, 0, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(Request::write).decoder(Request::read)
                 .consumerMainThread((request, supplier) -> {
                     ServerPlayer player = supplier.get().getSender();
-                    if (player != null) receive(player, request);
+                    if (player != null)
+                        receive(player, request);
                     supplier.get().setPacketHandled(true);
                 }).add();
     }
@@ -52,12 +54,14 @@ public final class Ae2PatternNetwork {
     private static void receive(ServerPlayer player, Request request) {
         if (request.total < 1 || request.total > 48 || request.index < 0 || request.index >= request.total
                 || request.plans.isEmpty() || request.plans.size() > CHUNK_SIZE
-                || player.containerMenu.containerId != request.menuId) return;
+                || player.containerMenu.containerId != request.menuId)
+            return;
         UUID id = player.getUUID();
         Pending pending = PENDING.get(id);
         if (pending == null || pending.batch != request.batch || pending.menuId != request.menuId
                 || System.nanoTime() - pending.created > 10_000_000_000L) {
-            if (request.index != 0) return;
+            if (request.index != 0)
+                return;
             pending = new Pending(request.batch, request.menuId, request.total, request.force);
             PENDING.put(id, pending);
         }
@@ -80,12 +84,15 @@ public final class Ae2PatternNetwork {
         final List<Ae2PatternPlan> parts = new ArrayList<>();
         int next;
         Pending(int batch, int menuId, int total, boolean force) {
-            this.batch = batch; this.menuId = menuId; this.total = total; this.force = force;
+            this.batch = batch;
+            this.menuId = menuId;
+            this.total = total;
+            this.force = force;
         }
     }
 
     public record Request(int menuId, int batch, int index, int total, boolean force,
-                          List<Ae2PatternPlan> plans) {
+            List<Ae2PatternPlan> plans) {
         private void write(FriendlyByteBuf buffer) {
             buffer.writeVarInt(menuId);
             buffer.writeInt(batch);
@@ -95,11 +102,14 @@ public final class Ae2PatternNetwork {
             buffer.writeVarInt(plans.size());
             for (Ae2PatternPlan plan : plans) {
                 buffer.writeBoolean(plan.recipeId() != null);
-                if (plan.recipeId() != null) buffer.writeResourceLocation(plan.recipeId());
+                if (plan.recipeId() != null)
+                    buffer.writeResourceLocation(plan.recipeId());
                 buffer.writeVarInt(plan.inputs().size());
-                for (ItemStack stack : plan.inputs()) buffer.writeItem(stack);
+                for (ItemStack stack : plan.inputs())
+                    buffer.writeItem(stack);
                 buffer.writeVarInt(plan.outputs().size());
-                for (ItemStack stack : plan.outputs()) buffer.writeItem(stack);
+                for (ItemStack stack : plan.outputs())
+                    buffer.writeItem(stack);
                 buffer.writeBoolean(plan.substitute());
             }
         }
@@ -111,18 +121,23 @@ public final class Ae2PatternNetwork {
             int total = buffer.readVarInt();
             boolean force = buffer.readBoolean();
             int size = buffer.readVarInt();
-            if (size < 0 || size > CHUNK_SIZE) throw new IllegalArgumentException("Invalid pattern chunk");
+            if (size < 0 || size > CHUNK_SIZE)
+                throw new IllegalArgumentException("Invalid pattern chunk");
             List<Ae2PatternPlan> plans = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
                 ResourceLocation recipeId = buffer.readBoolean() ? buffer.readResourceLocation() : null;
                 int inputCount = buffer.readVarInt();
-                if (inputCount < 0 || inputCount > 9) throw new IllegalArgumentException("Invalid pattern inputs");
+                if (inputCount < 0 || inputCount > 9)
+                    throw new IllegalArgumentException("Invalid pattern inputs");
                 List<ItemStack> inputs = new ArrayList<>(inputCount);
-                for (int j = 0; j < inputCount; j++) inputs.add(buffer.readItem());
+                for (int j = 0; j < inputCount; j++)
+                    inputs.add(buffer.readItem());
                 int outputCount = buffer.readVarInt();
-                if (outputCount < 0 || outputCount > 3) throw new IllegalArgumentException("Invalid pattern outputs");
+                if (outputCount < 0 || outputCount > 3)
+                    throw new IllegalArgumentException("Invalid pattern outputs");
                 List<ItemStack> outputs = new ArrayList<>(outputCount);
-                for (int j = 0; j < outputCount; j++) outputs.add(buffer.readItem());
+                for (int j = 0; j < outputCount; j++)
+                    outputs.add(buffer.readItem());
                 plans.add(new Ae2PatternPlan(recipeId, inputs, outputs, buffer.readBoolean()));
             }
             return new Request(menuId, batch, index, total, force, plans);

@@ -39,7 +39,7 @@ public final class IngredientListFeatures {
 
     public static boolean isGroupElement(IElement<?> element) {
         return Proxy.isProxyClass(element.getClass())
-            && Proxy.getInvocationHandler(element) instanceof GroupedIngredientElementHandler;
+                && Proxy.getInvocationHandler(element) instanceof GroupedIngredientElementHandler;
     }
 
     private static boolean isCheatModeEnabled() {
@@ -240,10 +240,9 @@ public final class IngredientListFeatures {
                 }
                 case "getTooltip" -> {
                     ((JeiTooltip) args[0]).add(Component.translatable(
-                        "jei_plus_plus.group.tooltip",
-                        label,
-                        elements.size()
-                    ));
+                            "jei_plus_plus.group.tooltip",
+                            label,
+                            elements.size()));
                     if (isCheatModeEnabled()) {
                         ((JeiTooltip) args[0]).add(Component.translatable("jei_plus_plus.group.cheat_hint"));
                     }

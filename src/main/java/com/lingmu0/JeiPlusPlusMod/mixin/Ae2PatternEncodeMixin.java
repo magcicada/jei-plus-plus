@@ -19,7 +19,8 @@ public abstract class Ae2PatternEncodeMixin {
                 && Minecraft.getInstance().player.containerMenu == (AbstractContainerMenu) (Object) this
                 && Minecraft.getInstance().screen != null
                 && Minecraft.getInstance().screen.getClass().getName().equals(
-                    "appeng.client.gui.me.items.PatternEncodingTermScreen")
-                && Ae2PatternClient.onEncode()) ci.cancel();
+                        "appeng.client.gui.me.items.PatternEncodingTermScreen")
+                && Ae2PatternClient.onEncode())
+            ci.cancel();
     }
 }

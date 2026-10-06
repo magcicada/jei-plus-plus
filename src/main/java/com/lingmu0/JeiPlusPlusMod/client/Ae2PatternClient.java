@@ -16,14 +16,18 @@ import java.util.Set;
 
 /** Client-only recipe-tree export for AE2's encode button modifier actions. */
 public final class Ae2PatternClient {
-    private Ae2PatternClient() {}
+    private Ae2PatternClient() {
+    }
 
     public static boolean onEncode() {
-        if (!Screen.hasShiftDown() && !Screen.hasControlDown()) return false;
+        if (!Screen.hasShiftDown() && !Screen.hasControlDown())
+            return false;
         var minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.player.containerMenu == null) return false;
+        if (minecraft.player == null || minecraft.player.containerMenu == null)
+            return false;
         if (!Ae2PatternNetwork.available(minecraft.getConnection() == null
-                ? null : minecraft.getConnection().getConnection())) {
+                ? null
+                : minecraft.getConnection().getConnection())) {
             minecraft.player.displayClientMessage(Component.translatable("jei_plus_plus.ae2.server_required"), true);
             return true;
         }
@@ -44,11 +48,13 @@ public final class Ae2PatternClient {
     }
 
     private static void collect(RecipeTreeData.Node node, List<Ae2PatternPlan> plans, Set<String> seen) {
-        for (RecipeTreeData.Node child : node.children()) collect(child, plans, seen);
+        for (RecipeTreeData.Node child : node.children())
+            collect(child, plans, seen);
         RecipeTreeData.RecipeSnapshot recipe = node.recipe();
         if (recipe == null || recipe.inputs().isEmpty() || recipe.outputs().isEmpty()
                 || recipe.inputSlotCount() > 9
-                || plans.size() >= RecipeTreeData.MAX_NODES) return;
+                || plans.size() >= RecipeTreeData.MAX_NODES)
+            return;
         ItemStack[] inputs = new ItemStack[Math.min(9, recipe.inputSlotCount())];
         Arrays.fill(inputs, ItemStack.EMPTY);
         boolean substitute = false;
@@ -62,7 +68,8 @@ public final class Ae2PatternClient {
                     break;
                 }
             }
-            if (!pinned && input.alternatives().size() > 1) substitute = true;
+            if (!pinned && input.alternatives().size() > 1)
+                substitute = true;
             for (int slot : input.slotIndexes()) {
                 if (slot >= 0 && slot < inputs.length) {
                     inputs[slot] = chosen.copy();
@@ -80,6 +87,7 @@ public final class Ae2PatternClient {
         // A stable signature avoids producing duplicate patterns for repeated tree nodes.
         String signature = recipe.ref().key() + Arrays.toString(Arrays.stream(inputs)
                 .map(RecipeTreeData::ingredientKey).toArray()) + substitute;
-        if (seen.add(signature)) plans.add(new Ae2PatternPlan(id, Arrays.asList(inputs), outputs, substitute));
+        if (seen.add(signature))
+            plans.add(new Ae2PatternPlan(id, Arrays.asList(inputs), outputs, substitute));
     }
 }

@@ -13,8 +13,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class EffectRenderingInventoryScreenMixin {
     @Inject(method = "renderEffects", at = @At("HEAD"), cancellable = true)
     private void jeiPlusPlus$hideEffectsWhileSelectorOpen(
-        GuiGraphics graphics, int mouseX, int mouseY, CallbackInfo ci
-    ) {
-        if (CreativeTabGridCompat.isAnySelectorOpen()) ci.cancel();
+            GuiGraphics graphics, int mouseX, int mouseY, CallbackInfo ci) {
+        if (CreativeTabGridCompat.isAnySelectorOpen())
+            ci.cancel();
     }
 }
