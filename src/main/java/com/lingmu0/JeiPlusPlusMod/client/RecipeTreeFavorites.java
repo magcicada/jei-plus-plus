@@ -521,7 +521,7 @@ public final class RecipeTreeFavorites {
         }
         int fallback = 9;
         try {
-            return Math.max(1, Internal.getClientConfigs().getBookmarkListConfig().maxColumns().get());
+            return Math.max(1, Internal.getClientConfigs().getBookmarkListConfig().getMaxColumns());
         } catch (RuntimeException ignored) {
             return fallback;
         }
