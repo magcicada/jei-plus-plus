@@ -55,7 +55,8 @@ public abstract class BookmarkOverlayMixin implements JeiExtraInputArea {
         else if (jeiPlusPlus$visible() && RecipeTreeFavorites.isActive()) cir.setReturnValue(true);
     }
 
-    @Inject(method = "drawForeground", at = @At("TAIL"), remap = false, require = 0)
+    // Hook the outer entry point so an optimized/inlined drawForeground cannot bypass the button.
+    @Inject(method = "drawScreen", at = @At("TAIL"), remap = false, require = 1)
     private void jeiPlusPlus$draw(Minecraft mc, GuiGraphics graphics, int x, int y, float partial, CallbackInfo ci) {
         jeiPlusPlus$render(graphics, x, y);
     }
