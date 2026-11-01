@@ -3,6 +3,9 @@ package com.lingmu0.JeiPlusPlusMod.client;
 import com.lingmu0.JeiPlusPlusMod.JeiPlusPlus;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.helpers.IGuiHelper;
+import mezz.jei.common.Internal;
+import mezz.jei.common.util.ImmutableRect2i;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
@@ -17,14 +20,24 @@ public final class RecipeTreeIcons {
 
     public static void initialize(IGuiHelper guiHelper) {
         globalTree = guiHelper.drawableBuilder(texture("recipe_tree_global.png"), 0, 0, 18, 18)
-                .setTextureSize(18, 18)
-                .build();
+            .setTextureSize(18, 18)
+            .build();
         recipeTree = guiHelper.drawableBuilder(texture("recipe_tree.png"), 0, 0, 10, 10)
-                .setTextureSize(10, 10)
-                .build();
+            .setTextureSize(10, 10)
+            .build();
         defaultRecipe = guiHelper.drawableBuilder(texture("recipe_default.png"), 0, 0, 10, 10)
-                .setTextureSize(10, 10)
-                .build();
+            .setTextureSize(10, 10)
+            .build();
+    }
+
+    /** Use the installed JEI skin for normal, hovered and saved-tree selected states. */
+    public static void drawGlobalButton(GuiGraphics graphics, ImmutableRect2i area, boolean hovered, boolean selected) {
+        if (area.isEmpty()) return;
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        Internal.getTextures().getButtonForState(selected, true, hovered)
+            .draw(graphics, area.getX(), area.getY(), area.getWidth(), area.getHeight());
+        drawGlobalTree(graphics, area.getX() + (area.getWidth() - 18) / 2,
+            area.getY() + (area.getHeight() - 18) / 2);
     }
 
     public static void drawGlobalTree(GuiGraphics graphics, int x, int y) {

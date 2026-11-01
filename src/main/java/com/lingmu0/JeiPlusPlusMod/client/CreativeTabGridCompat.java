@@ -1,20 +1,14 @@
 package com.lingmu0.JeiPlusPlusMod.client;
 
 import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
-import mezz.jei.common.input.IInternalKeyMappings;
-import mezz.jei.common.input.IUserInputHandler;
-import mezz.jei.common.input.UserInput;
 import mezz.jei.common.util.ImmutableRect2i;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Optional;
 
-/** Shared reflective bridge for JEI's pre- and post-15.48 ingredient grids. */
+/** Shared reflective bridge for JEI's pre- and post-19.42 ingredient grids. */
 public final class CreativeTabGridCompat {
     private static volatile boolean selectorOpen;
 
@@ -24,10 +18,13 @@ public final class CreativeTabGridCompat {
             try {
                 Field source = type.getDeclaredField("ingredientSource");
                 source.setAccessible(true);
-                return new GridAccess(source, type.getMethod("getBackgroundArea"), type.getMethod("getBackButtonArea"));
+                return new GridAccess(
+                    source,
+                    type.getMethod("getBackgroundArea"),
+                    type.getMethod("getBackButtonArea")
+                );
             } catch (ReflectiveOperationException exception) {
-                throw new IllegalStateException("Unsupported JEI ingredient-grid internals: " + type.getName(),
-                        exception);
+                throw new IllegalStateException("Unsupported JEI ingredient-grid internals: " + type.getName(), exception);
             }
         }
     };
@@ -56,8 +53,35 @@ public final class CreativeTabGridCompat {
         }
     }
 
-    public static IUserInputHandler wrapInput(Object owner, IUserInputHandler delegate) {
-        return new CreativeTabInputHandler(owner, delegate);
+    /** Called only from JEI's final screen pass, never from the ingredient background pass. */
+    public static void drawModal(Object overlay, GuiGraphics graphics, int mouseX, int mouseY) {
+        if (!selectorOpen || !JeiPlusPlusConfig.CREATIVE_TAB_BAR_ENABLED.get()) return;
+        Object owner = JeiReflectionCompat.readField(overlay, "contents");
+        IngredientListFeatureSource source = getFeatureSource(owner);
+        if (source == null || !source.jeiPlusPlus$isCreativeTabSelectorOpen()) return;
+        graphics.flush();
+        CreativeTabSelector.draw(source, graphics, mouseX, mouseY);
+        CreativeTabSelector.drawTooltip(source, graphics, mouseX, mouseY);
+        graphics.flush();
+    }
+
+    public static Object wrapInput(Object owner, Object delegate) {
+        return JeiReflectionCompat.customInputHandler(
+            (proxy, method, args) -> handleTabInput(owner, delegate, proxy, method, args)
+        );
+    }
+
+    public static boolean containsExtraInput(Object owner, double x, double y) {
+        IngredientListFeatureSource source = getFeatureSource(owner);
+        return source != null && JeiPlusPlusConfig.CREATIVE_TAB_BAR_ENABLED.get()
+            && !source.jeiPlusPlus$getCreativeTabs().isEmpty()
+            && (source.jeiPlusPlus$isCreativeTabSelectorOpen() || getArea(owner).contains(x, y));
+    }
+
+    /** Unlike isSelectorOpen, only the actual ingredient list can own the modal picker. */
+    public static boolean ownsSelector(Object owner) {
+        IngredientListFeatureSource source = getFeatureSource(owner);
+        return source != null && source.jeiPlusPlus$isCreativeTabSelectorOpen();
     }
 
     public static boolean isSelectorOpen(Object owner) {
@@ -101,42 +125,64 @@ public final class CreativeTabGridCompat {
     private record GridAccess(Field ingredientSource, Method getBackgroundArea, Method getBackButtonArea) {
     }
 
-    private static final class CreativeTabInputHandler implements IUserInputHandler {
-        private final Object owner;
-        private final IUserInputHandler delegate;
-
-        private CreativeTabInputHandler(Object owner, IUserInputHandler delegate) {
-            this.owner = owner;
-            this.delegate = delegate;
-        }
-
-        @Override
-        public @NotNull Optional<IUserInputHandler> handleUserInput(@NotNull Screen screen, @NotNull UserInput input,
-                @NotNull IInternalKeyMappings keyBindings) {
-            IngredientListFeatureSource source = getFeatureSource(owner);
-            if (source != null && CreativeTabBar.handleClick(source, getArea(owner), input)) {
-                return Optional.of(this);
+    private static Object handleTabInput(
+        Object owner,
+        Object delegate,
+        Object proxy,
+        Method method,
+        Object[] args
+    ) throws Throwable {
+        switch (method.getName()) {
+            case "equals" -> {
+                return proxy == args[0];
             }
-            return delegate.handleUserInput(screen, input, keyBindings);
-        }
-
-        @Override
-        public void unfocus() {
-            delegate.unfocus();
-        }
-
-        @Override
-        public @NotNull Optional<IUserInputHandler> handleMouseScrolled(double mouseX, double mouseY,
-                double scrollDelta) {
-            IngredientListFeatureSource source = getFeatureSource(owner);
-            if (source != null) {
-                Optional<IUserInputHandler> result = CreativeTabBar.handleScroll(
-                        source, getArea(owner), mouseX, mouseY, scrollDelta, this);
-                if (result.isPresent()) {
-                    return result;
+            case "hashCode" -> {
+                return System.identityHashCode(proxy);
+            }
+            case "toString" -> {
+                return "JEI++ creative tab input handler";
+            }
+            case "resetInput" -> {
+                return JeiReflectionCompat.invokeInputHandler(delegate, method, args);
+            }
+            case "beginInput" -> {
+                IngredientListFeatureSource source = getFeatureSource(owner);
+                return source != null && CreativeTabBar.handleClick(source, getArea(owner), JeiReflectionCompat.inputArgument(args))
+                    ? java.util.Optional.of(proxy)
+                    : JeiReflectionCompat.invokeInputHandler(delegate, method, args);
+            }
+            case "scroll" -> {
+                IngredientListFeatureSource source = getFeatureSource(owner);
+                if (source != null) {
+                    java.util.Optional<Object> result = CreativeTabBar.handleScroll(
+                        source,
+                        getArea(owner),
+                        ((Number) args[0]).doubleValue(),
+                        ((Number) args[1]).doubleValue(),
+                        ((Number) args[args.length - 1]).doubleValue(),
+                        proxy
+                    );
+                    if (result.isPresent()) {
+                        return result;
+                    }
                 }
+                double x = ((Number) args[0]).doubleValue();
+                double y = ((Number) args[1]).doubleValue();
+                double dy = ((Number) args[args.length - 1]).doubleValue();
+                if (dy != 0 && JeiInputAreaCompat.insideBand(x, y,
+                    JeiReflectionCompat.tryInvoke(owner, "getBackButtonArea"),
+                    JeiReflectionCompat.tryInvoke(owner, "getNextPageButtonArea"))) {
+                    Object pages = JeiReflectionCompat.tryInvoke(owner, "getPageDelegate");
+                    if (pages != null) {
+                        JeiReflectionCompat.invokeNoArgsUnchecked(pages, dy < 0 ? "nextPage" : "previousPage");
+                        return java.util.Optional.of(proxy);
+                    }
+                }
+                return JeiReflectionCompat.invokeInputHandler(delegate, method, args);
             }
-            return delegate.handleMouseScrolled(mouseX, mouseY, scrollDelta);
+            default -> {
+                return JeiReflectionCompat.invokeInputHandler(delegate, method, args);
+            }
         }
     }
 }

@@ -2,7 +2,6 @@ package com.lingmu0.JeiPlusPlusMod.client;
 
 import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
 import com.mojang.blaze3d.platform.InputConstants;
-import mezz.jei.common.input.IUserInputHandler;
 import mezz.jei.common.input.UserInput;
 import mezz.jei.common.util.ImmutableRect2i;
 import net.minecraft.client.Minecraft;
@@ -119,9 +118,6 @@ public final class CreativeTabBar {
                     true);
         }
         pose.popPose();
-        if (source.jeiPlusPlus$isCreativeTabSelectorOpen()) {
-            CreativeTabSelector.draw(source, guiGraphics, mouseX, mouseY);
-        }
     }
 
     public static void drawTooltip(
@@ -134,7 +130,7 @@ public final class CreativeTabBar {
             return;
         }
         if (source.jeiPlusPlus$isCreativeTabSelectorOpen()) {
-            CreativeTabSelector.drawTooltip(source, guiGraphics, mouseX, mouseY);
+            // The modal and its tooltip are rendered together after the entire screen.
             return;
         }
         int pageCount = getPageCount(source.jeiPlusPlus$getCreativeTabs().size() + 1, getCapacity(area));
@@ -166,56 +162,58 @@ public final class CreativeTabBar {
     public static boolean handleClick(
             IngredientListFeatureSource source,
             ImmutableRect2i area,
-            UserInput input) {
+        Object input
+    ) {
         if (source != null && source.jeiPlusPlus$isCreativeTabSelectorOpen()) {
             return CreativeTabSelector.handleClick(source, area, input);
         }
         if (!isEnabled(source)
-                || input.getKey().getType() != InputConstants.Type.MOUSE
-                || !area.contains(input.getMouseX(), input.getMouseY())) {
+            || JeiReflectionCompat.inputKey(input).getType() != InputConstants.Type.MOUSE
+            || !area.contains(JeiReflectionCompat.inputMouseX(input), JeiReflectionCompat.inputMouseY(input))) {
             return false;
         }
-        if (input.getKey().getValue() == 1) {
-            if (!input.isSimulate()) {
+        if (JeiReflectionCompat.inputKey(input).getValue() == 1) {
+            if (!JeiReflectionCompat.isInputSimulated(input)) {
                 source.jeiPlusPlus$setCreativeTabSelectorPage(0);
                 source.jeiPlusPlus$setCreativeTabSelectorOpen(true);
             }
             return true;
         }
-        if (input.getKey().getValue() != 0) {
+        if (JeiReflectionCompat.inputKey(input).getValue() != 0) {
             return false;
         }
         int capacity = getCapacity(area);
         int pageCount = getPageCount(source.jeiPlusPlus$getCreativeTabs().size() + 1, capacity);
         int page = clampPage(source.jeiPlusPlus$getCreativeTabPage(), pageCount);
-        boolean previous = isPageButton(area, input.getMouseX(), input.getMouseY(), true);
-        boolean next = isPageButton(area, input.getMouseX(), input.getMouseY(), false);
+        boolean previous = isPageButton(area, JeiReflectionCompat.inputMouseX(input), JeiReflectionCompat.inputMouseY(input), true);
+        boolean next = isPageButton(area, JeiReflectionCompat.inputMouseX(input), JeiReflectionCompat.inputMouseY(input), false);
         if (previous || next) {
-            if (!input.isSimulate()) {
+            if (!JeiReflectionCompat.isInputSimulated(input)) {
                 int target = page + (next ? 1 : -1);
                 source.jeiPlusPlus$setCreativeTabPage(Math.floorMod(target, pageCount));
             }
             return true;
         }
 
-        int tabIndex = getTabAt(source, area, input.getMouseX(), input.getMouseY(), page, capacity);
+        int tabIndex = getTabAt(source, area, JeiReflectionCompat.inputMouseX(input), JeiReflectionCompat.inputMouseY(input), page, capacity);
         if (tabIndex < 0) {
             return false;
         }
-        if (!input.isSimulate()) {
+        if (!JeiReflectionCompat.isInputSimulated(input)) {
             source.jeiPlusPlus$setCreativeTabPage(tabIndex / capacity);
             source.jeiPlusPlus$selectCreativeTab(tabIndex);
         }
         return true;
     }
 
-    public static Optional<IUserInputHandler> handleScroll(
+    public static Optional<Object> handleScroll(
             IngredientListFeatureSource source,
             ImmutableRect2i area,
             double mouseX,
             double mouseY,
             double scrollDeltaY,
-            IUserInputHandler self) {
+        Object self
+    ) {
         if (source != null && source.jeiPlusPlus$isCreativeTabSelectorOpen()) {
             if (CreativeTabSelector.handleScroll(source, mouseX, mouseY, scrollDeltaY)) {
                 return Optional.of(self);

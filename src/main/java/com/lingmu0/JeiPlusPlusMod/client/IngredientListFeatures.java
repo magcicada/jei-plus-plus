@@ -3,14 +3,18 @@ package com.lingmu0.JeiPlusPlusMod.client;
 import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
 import mezz.jei.common.Internal;
 import mezz.jei.common.gui.JeiTooltip;
-import mezz.jei.common.input.UserInput;
 import mezz.jei.gui.overlay.elements.IElement;
+import mezz.jei.gui.util.FocusUtil;
 import mezz.jei.api.gui.drawable.IDrawable;
+import mezz.jei.api.recipe.RecipeIngredientRole;
+import mezz.jei.api.runtime.IRecipesGui;
+import mezz.jei.common.input.IInternalKeyMappings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -28,7 +32,7 @@ import java.util.HashSet;
 import com.mojang.blaze3d.platform.InputConstants;
 
 /**
- * The list transformation used by the JEI ingredient filter mixin. Reliable
+ * The list transformation used by the JEI ingredient filter mixin.  Reliable
  * EMI treats related variants as one expandable stack; this keeps the same
  * interaction model while letting JEI continue to own searching, sorting,
  * rendering and recipe lookups.
@@ -39,7 +43,7 @@ public final class IngredientListFeatures {
 
     public static boolean isGroupElement(IElement<?> element) {
         return Proxy.isProxyClass(element.getClass())
-                && Proxy.getInvocationHandler(element) instanceof GroupedIngredientElementHandler;
+            && Proxy.getInvocationHandler(element) instanceof GroupedIngredientElementHandler;
     }
 
     private static boolean isCheatModeEnabled() {
@@ -51,8 +55,9 @@ public final class IngredientListFeatures {
     }
 
     public static List<IElement<?>> transform(
-            IngredientListFeatureSource source,
-            List<IElement<?>> original) {
+        IngredientListFeatureSource source,
+        List<IElement<?>> original
+    ) {
         List<IElement<?>> filtered = original;
         if (JeiPlusPlusConfig.CREATIVE_TAB_BAR_ENABLED.get() && source.jeiPlusPlus$getSelectedCreativeTab() > 0) {
             filtered = filterCreativeTab(source, original);
@@ -64,8 +69,9 @@ public final class IngredientListFeatures {
     }
 
     private static List<IElement<?>> filterCreativeTab(
-            IngredientListFeatureSource source,
-            List<IElement<?>> original) {
+        IngredientListFeatureSource source,
+        List<IElement<?>> original
+    ) {
         List<net.minecraft.world.item.CreativeModeTab> tabs = source.jeiPlusPlus$getCreativeTabs();
         int selected = source.jeiPlusPlus$getSelectedCreativeTab() - 1;
         if (selected < 0 || selected >= tabs.size()) {
@@ -83,8 +89,9 @@ public final class IngredientListFeatures {
     }
 
     private static List<IElement<?>> groupElements(
-            IngredientListFeatureSource source,
-            List<IElement<?>> original) {
+        IngredientListFeatureSource source,
+        List<IElement<?>> original
+    ) {
         List<StackGroupManager.GroupDefinition> definitions = StackGroupManager.getDefinitions();
         Map<String, GroupBuilder> groups = new LinkedHashMap<>();
         Map<Integer, String> groupAtIndex = new LinkedHashMap<>();
@@ -111,8 +118,9 @@ public final class IngredientListFeatures {
             }
             String key = match.key();
             GroupBuilder builder = groups.computeIfAbsent(
-                    key,
-                    ignored -> new GroupBuilder(key, match.label()));
+                key,
+                ignored -> new GroupBuilder(key, match.label())
+            );
             builder.elements.add(element);
             groupAtIndex.putIfAbsent(i, key);
         }
@@ -121,7 +129,7 @@ public final class IngredientListFeatures {
             return original;
         }
 
-        // A group with only one matching element is not a group at all. This
+        // A group with only one matching element is not a group at all.  This
         // also prevents a mod that registers one custom variant from losing
         // its normal JEI entry.
         groups.values().removeIf(group -> group.elements.size() < 2);
@@ -142,7 +150,7 @@ public final class IngredientListFeatures {
             }
             GroupBuilder group = groups.get(key);
             if (sourceIsExpanded(source, key)) {
-                // Keep a group control in the list while expanded. This is
+                // Keep a group control in the list while expanded.  This is
                 // the collapse affordance; without it the original group
                 // element disappears and the user can only expand once.
                 result.add(createGroupedIngredientElement(source, key, group.label, group.elements, true));
@@ -155,7 +163,7 @@ public final class IngredientListFeatures {
     }
 
     private static boolean sourceIsExpanded(IngredientListFeatureSource source, String key) {
-        // The mixin owns the expansion set. A small optional interface keeps
+        // The mixin owns the expansion set.  A small optional interface keeps
         // this class usable with older JEI versions while retaining the same
         // source contract.
         return source instanceof IngredientListExpansionState state && state.jeiPlusPlus$isGroupExpanded(key);
@@ -181,15 +189,17 @@ public final class IngredientListFeatures {
      * same jar remains valid on both sides of that internal API change.
      */
     private static IElement<?> createGroupedIngredientElement(
-            IngredientListFeatureSource source,
-            String groupKey,
-            Component label,
-            List<IElement<?>> elements,
-            boolean expanded) {
+        IngredientListFeatureSource source,
+        String groupKey,
+        Component label,
+        List<IElement<?>> elements,
+        boolean expanded
+    ) {
         return (IElement<?>) Proxy.newProxyInstance(
-                IElement.class.getClassLoader(),
-                new Class<?>[]{IElement.class},
-                new GroupedIngredientElementHandler(source, groupKey, label, elements, expanded));
+            IElement.class.getClassLoader(),
+            new Class<?>[]{IElement.class},
+            new GroupedIngredientElementHandler(source, groupKey, label, elements, expanded)
+        );
     }
 
     /** A clickable JEI slot representing several related item variants. */
@@ -202,11 +212,12 @@ public final class IngredientListFeatures {
         private final IElement<?> delegate;
 
         private GroupedIngredientElementHandler(
-                IngredientListFeatureSource source,
-                String groupKey,
-                Component label,
-                List<IElement<?>> elements,
-                boolean expanded) {
+            IngredientListFeatureSource source,
+            String groupKey,
+            Component label,
+            List<IElement<?>> elements,
+            boolean expanded
+        ) {
             this.source = source;
             this.groupKey = groupKey;
             this.label = label;
@@ -215,13 +226,13 @@ public final class IngredientListFeatures {
             this.delegate = elements.get(0);
         }
 
-        private boolean handleClick(UserInput input) {
-            if (input.getKey().getType() == InputConstants.Type.MOUSE && input.getKey().getValue() == 0) {
+        private boolean handleClick(Object input) {
+            if (JeiReflectionCompat.inputKey(input).getType() == InputConstants.Type.MOUSE && JeiReflectionCompat.inputKey(input).getValue() == 0) {
                 // In cheat mode, JEI owns the click. R/U still opens the group.
                 if (isCheatModeEnabled()) {
                     return false;
                 }
-                if (!input.isSimulate()) {
+                if (!JeiReflectionCompat.isInputSimulated(input)) {
                     source.jeiPlusPlus$toggleGroup(groupKey);
                 }
                 return true;
@@ -233,16 +244,18 @@ public final class IngredientListFeatures {
         public Object invoke(Object proxy, Method method, Object[] arguments) throws Throwable {
             Object[] args = arguments == null ? new Object[0] : arguments;
             return switch (method.getName()) {
-                case "handleClick" -> handleClick((UserInput) args[0]);
+                case "prepareAction" -> JeiReflectionCompat.prepareAction(args[0], this::handleClick);
+                case "handleClick" -> handleClick((Object) args[0]);
                 case "show" -> {
                     source.jeiPlusPlus$toggleGroup(groupKey);
                     yield null;
                 }
                 case "getTooltip" -> {
                     ((JeiTooltip) args[0]).add(Component.translatable(
-                            "jei_plus_plus.group.tooltip",
-                            label,
-                            elements.size()));
+                        "jei_plus_plus.group.tooltip",
+                        label,
+                        elements.size()
+                    ));
                     if (isCheatModeEnabled()) {
                         ((JeiTooltip) args[0]).add(Component.translatable("jei_plus_plus.group.cheat_hint"));
                     }
@@ -289,7 +302,7 @@ public final class IngredientListFeatures {
             String label = (expanded ? "-" : "+") + count;
             var pose = guiGraphics.pose();
             pose.pushPose();
-            // JEI renders item stacks with depth enabled. Put the count in
+            // JEI renders item stacks with depth enabled.  Put the count in
             // a higher pose layer so it cannot be hidden by the icon below.
             pose.translate(0.0D, 0.0D, 300.0D);
             guiGraphics.drawString(Minecraft.getInstance().font, label, xOffset + 1, yOffset + 8, 0xFFFFFFFF, true);

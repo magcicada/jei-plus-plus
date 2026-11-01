@@ -1,5 +1,9 @@
 # JEI++
 
+构建时用 `jei_compile_version` 保留旧 API 编译基线，用 `jei_version` 选择开发运行与兼容检查的 JEI 版本；不会提高原有最低兼容版本。输入接口按当前 JEI 实际提供的类选择新旧实现。
+
+The build keeps a legacy API baseline in `jei_compile_version`; `jei_version` selects the development runtime and compatibility-check target. Existing minimum JEI versions are unchanged, and input implementations are selected by API availability.
+
 JEI++ 是一个仅客户端运行的 JEI 附属模组，为 JEI 增加配方目录、配方树、制作助手、流体支持、存储网络库存读取、创造物品分类栏和可折叠物品分组。它不添加方块、物品、配方或其他游戏内容。
 
 ## 中文说明
@@ -123,11 +127,11 @@ JSON 分组示例：
 
 ## 版本与依赖
 
-| 游戏版本 | 加载器 | Java | JEI 开发依赖 | 模组版本 |
+| 游戏版本 | 加载器 | Java | JEI 开发运行版本 | 模组版本 |
 | --- | --- | --- | --- | --- |
-| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.59.0.210 | 1.0.7-1.20.1 |
+| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.74.0.229 | 1.0.8a-1.20.1 |
 
-声明的 JEI 兼容范围从 15.19.5.99 起，表中版本是当前开发依赖。
+声明的 JEI 兼容范围从 15.19.5.99 起，表中版本是当前开发运行版本。
 
 JEI 是可选客户端依赖；服务端不需要安装 JEI++，模组不提供服务端游戏逻辑。
 
@@ -163,9 +167,9 @@ Candidate, per-recipe snapshot, recipe-status, layout, inventory/network, and fl
 
 ### Version and dependency
 
-| Minecraft | Loader | Java | JEI development dependency | Mod version |
+| Minecraft | Loader | Java | JEI development runtime | Mod version |
 | --- | --- | --- | --- | --- |
-| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.59.0.210 | 1.0.7-1.20.1 |
+| 1.20.1 | Forge 47.4.22 | 17 | JEI 15.74.0.229 | 1.0.8a-1.20.1 |
 
 The declared JEI compatibility floor is 15.19.5.99; the table lists the current development dependency.
 
