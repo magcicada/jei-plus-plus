@@ -130,7 +130,9 @@ public final class JeiInputSceneTest {
     private static Object scene(Class<?> sceneApi, Class<?> areaApi, List<Object> areas) throws Exception {
         Object array = Array.newInstance(areaApi, areas.size());
         for (int i = 0; i < areas.size(); i++) Array.set(array, i, areas.get(i));
-        return sceneApi.getConstructor(array.getClass()).newInstance(array);
+        Class<?> focusApi = Class.forName("mezz.jei.gui.input.focus.GuiKeyboardFocus");
+        Object keyboardFocus = focusApi.getConstructor().newInstance();
+        return sceneApi.getConstructor(focusApi, array.getClass()).newInstance(keyboardFocus, array);
     }
 
     private static Optional<?> nativeTarget(Object scene, double x, double y) throws Exception {
