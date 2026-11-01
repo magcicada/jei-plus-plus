@@ -3,7 +3,7 @@ package com.lingmu0.JeiPlusPlusMod.mixin;
 import com.lingmu0.JeiPlusPlusMod.client.*;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.*;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import mezz.jei.common.input.IInputTarget;
 
 /** Register the reserved category row and give the modal picker first refusal on input. */
 @Pseudo
@@ -20,9 +20,17 @@ public abstract class JeiIngredientOverlayInputMixin implements JeiExtraInputAre
         return CreativeTabGridCompat.ownsSelector(JeiReflectionCompat.readField(this, "contents"));
     }
 
-    @Inject(method = "createInputHandler", at = @At("RETURN"), cancellable = true, remap = false)
-    private void jeiPlusPlus$priorityInput(CallbackInfoReturnable<Object> cir) {
-        cir.setReturnValue(CreativeTabGridCompat.wrapInput(
-            JeiReflectionCompat.readField(this, "contents"), cir.getReturnValue()));
+    @ModifyArg(
+        method = "createInputArea",
+        at = @At(
+            value = "INVOKE",
+            target = "Lmezz/jei/gui/input/InputArea$Builder;controls(Lmezz/jei/common/input/IInputTarget;)Lmezz/jei/gui/input/InputArea$Builder;"
+        ),
+        index = 0,
+        remap = false
+    )
+    private IInputTarget jeiPlusPlus$priorityInput(IInputTarget original) {
+        return (IInputTarget) CreativeTabGridCompat.wrapInput(
+            JeiReflectionCompat.readField(this, "contents"), original);
     }
 }
