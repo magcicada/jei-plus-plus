@@ -10,7 +10,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Pseudo
 @Mixin(targets = "mezz.jei.gui.recipes.RecipesGui$RecipeCategoryScrollInputHandler", remap = false)
 public abstract class JeiRecipeNavigationMixin {
-    @Shadow @Final private RecipesGui recipesGui;
+    @Shadow
+    @Final
+    private RecipesGui recipesGui;
 
     @Inject(method = "scroll", at = @At("HEAD"), cancellable = true, remap = false)
     private void jeiPlusPlus$navigation(double x, double y, double dx, double dy, CallbackInfoReturnable<Boolean> cir) {

@@ -16,7 +16,7 @@ public abstract class JeiIconButtonMixin {
     private void jeiPlusPlus$hideRecipeBookmark(CallbackInfoReturnable<Boolean> cir) {
         Object controller = JeiReflectionCompat.readField(this, "controller");
         if (JeiPlusPlusConfig.HIDE_RECIPE_BOOKMARK_BUTTON.get() && controller != null
-            && controller.getClass().getName().equals("mezz.jei.gui.recipes.RecipeBookmarkButtonController")) {
+                && controller.getClass().getName().equals("mezz.jei.gui.recipes.RecipeBookmarkButtonController")) {
             cir.setReturnValue(false);
         }
     }

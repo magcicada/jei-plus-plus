@@ -1,11 +1,6 @@
 package com.lingmu0.JeiPlusPlusMod.mixin;
 
-import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
 import com.lingmu0.JeiPlusPlusMod.client.CreativeTabGridCompat;
-import com.lingmu0.JeiPlusPlusMod.client.DirectoryIngredientElement;
-import mezz.jei.api.gui.inputs.RecipeSlotUnderMouse;
-import mezz.jei.api.ingredients.ITypedIngredient;
-import mezz.jei.gui.input.IClickableIngredientInternal;
 import mezz.jei.gui.recipes.RecipeGuiLayouts;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import net.minecraft.client.gui.GuiGraphics;
@@ -14,7 +9,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.List;
 import java.util.Optional;
 
 /** Adds a directory action to cycling/multi-ingredient recipe slots. */
@@ -22,11 +16,10 @@ import java.util.Optional;
 public abstract class RecipeGuiLayoutsMixin {
     @Inject(method = "drawTooltips", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private void jeiPlusPlus$hideRecipeTooltipsWhileSelectorOpen(
-        GuiGraphics graphics,
-        int mouseX,
-        int mouseY,
-        org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci
-    ) {
+            GuiGraphics graphics,
+            int mouseX,
+            int mouseY,
+            org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
         if (CreativeTabGridCompat.isAnySelectorOpen()) {
             ci.cancel();
         }
@@ -35,9 +28,8 @@ public abstract class RecipeGuiLayoutsMixin {
     @Inject(method = "getWidth", at = @At("RETURN"), cancellable = true, remap = false)
     private void jeiPlusPlus$reserveRecipeTreeWidth(CallbackInfoReturnable<Integer> cir) {
         int extra = com.lingmu0.JeiPlusPlusMod.client.RecipeTreeOverlay.extraWidth(
-            (RecipeGuiLayouts) (Object) this,
-            cir.getReturnValue()
-        );
+                (RecipeGuiLayouts) (Object) this,
+                cir.getReturnValue());
         if (extra > 0) {
             cir.setReturnValue(cir.getReturnValue() + extra);
         }
@@ -45,12 +37,12 @@ public abstract class RecipeGuiLayoutsMixin {
 
     @Inject(method = "draw", at = @At("TAIL"), remap = false)
     private void jeiPlusPlus$drawRecipeTreeButton(
-        GuiGraphics guiGraphics,
-        int mouseX,
-        int mouseY,
-        CallbackInfoReturnable<Optional<IRecipeLayoutDrawable<?>>> cir
-    ) {
-        com.lingmu0.JeiPlusPlusMod.client.RecipeTreeOverlay.draw((RecipeGuiLayouts) (Object) this, guiGraphics, mouseX, mouseY);
+            GuiGraphics guiGraphics,
+            int mouseX,
+            int mouseY,
+            CallbackInfoReturnable<Optional<IRecipeLayoutDrawable<?>>> cir) {
+        com.lingmu0.JeiPlusPlusMod.client.RecipeTreeOverlay.draw((RecipeGuiLayouts) (Object) this, guiGraphics, mouseX,
+                mouseY);
     }
 
 }

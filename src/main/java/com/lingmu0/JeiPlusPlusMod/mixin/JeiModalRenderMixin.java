@@ -12,7 +12,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Pseudo
 @Mixin(targets = "mezz.jei.gui.events.GuiEventHandler", remap = false)
 public abstract class JeiModalRenderMixin {
-    @Shadow @Final private IngredientListOverlay ingredientListOverlay;
+    @Shadow
+    @Final
+    private IngredientListOverlay ingredientListOverlay;
 
     @Inject(method = "onDrawScreenPost", at = @At("TAIL"), remap = false)
     private void jeiPlusPlus$modal(Screen screen, GuiGraphics graphics, int x, int y, CallbackInfo ci) {

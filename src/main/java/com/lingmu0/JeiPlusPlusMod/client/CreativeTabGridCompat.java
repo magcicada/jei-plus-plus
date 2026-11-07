@@ -19,12 +19,12 @@ public final class CreativeTabGridCompat {
                 Field source = type.getDeclaredField("ingredientSource");
                 source.setAccessible(true);
                 return new GridAccess(
-                    source,
-                    type.getMethod("getBackgroundArea"),
-                    type.getMethod("getBackButtonArea")
-                );
+                        source,
+                        type.getMethod("getBackgroundArea"),
+                        type.getMethod("getBackButtonArea"));
             } catch (ReflectiveOperationException exception) {
-                throw new IllegalStateException("Unsupported JEI ingredient-grid internals: " + type.getName(), exception);
+                throw new IllegalStateException("Unsupported JEI ingredient-grid internals: " + type.getName(),
+                        exception);
             }
         }
     };
@@ -55,10 +55,12 @@ public final class CreativeTabGridCompat {
 
     /** Called only from JEI's final screen pass, never from the ingredient background pass. */
     public static void drawModal(Object overlay, GuiGraphics graphics, int mouseX, int mouseY) {
-        if (!selectorOpen || !JeiPlusPlusConfig.CREATIVE_TAB_BAR_ENABLED.get()) return;
+        if (!selectorOpen || !JeiPlusPlusConfig.CREATIVE_TAB_BAR_ENABLED.get())
+            return;
         Object owner = JeiReflectionCompat.readField(overlay, "contents");
         IngredientListFeatureSource source = getFeatureSource(owner);
-        if (source == null || !source.jeiPlusPlus$isCreativeTabSelectorOpen()) return;
+        if (source == null || !source.jeiPlusPlus$isCreativeTabSelectorOpen())
+            return;
         graphics.flush();
         CreativeTabSelector.draw(source, graphics, mouseX, mouseY);
         CreativeTabSelector.drawTooltip(source, graphics, mouseX, mouseY);
@@ -67,15 +69,14 @@ public final class CreativeTabGridCompat {
 
     public static Object wrapInput(Object owner, Object delegate) {
         return JeiReflectionCompat.customInputHandler(
-            (proxy, method, args) -> handleTabInput(owner, delegate, proxy, method, args)
-        );
+                (proxy, method, args) -> handleTabInput(owner, delegate, proxy, method, args));
     }
 
     public static boolean containsExtraInput(Object owner, double x, double y) {
         IngredientListFeatureSource source = getFeatureSource(owner);
         return source != null && JeiPlusPlusConfig.CREATIVE_TAB_BAR_ENABLED.get()
-            && !source.jeiPlusPlus$getCreativeTabs().isEmpty()
-            && (source.jeiPlusPlus$isCreativeTabSelectorOpen() || getArea(owner).contains(x, y));
+                && !source.jeiPlusPlus$getCreativeTabs().isEmpty()
+                && (source.jeiPlusPlus$isCreativeTabSelectorOpen() || getArea(owner).contains(x, y));
     }
 
     /** Unlike isSelectorOpen, only the actual ingredient list can own the modal picker. */
@@ -126,12 +127,11 @@ public final class CreativeTabGridCompat {
     }
 
     private static Object handleTabInput(
-        Object owner,
-        Object delegate,
-        Object proxy,
-        Method method,
-        Object[] args
-    ) throws Throwable {
+            Object owner,
+            Object delegate,
+            Object proxy,
+            Method method,
+            Object[] args) throws Throwable {
         switch (method.getName()) {
             case "equals" -> {
                 return proxy == args[0];
@@ -147,21 +147,21 @@ public final class CreativeTabGridCompat {
             }
             case "beginInput" -> {
                 IngredientListFeatureSource source = getFeatureSource(owner);
-                return source != null && CreativeTabBar.handleClick(source, getArea(owner), JeiReflectionCompat.inputArgument(args))
-                    ? java.util.Optional.of(proxy)
-                    : JeiReflectionCompat.invokeInputHandler(delegate, method, args);
+                return source != null
+                        && CreativeTabBar.handleClick(source, getArea(owner), JeiReflectionCompat.inputArgument(args))
+                                ? java.util.Optional.of(proxy)
+                                : JeiReflectionCompat.invokeInputHandler(delegate, method, args);
             }
             case "scroll" -> {
                 IngredientListFeatureSource source = getFeatureSource(owner);
                 if (source != null) {
                     java.util.Optional<Object> result = CreativeTabBar.handleScroll(
-                        source,
-                        getArea(owner),
-                        ((Number) args[0]).doubleValue(),
-                        ((Number) args[1]).doubleValue(),
-                        ((Number) args[args.length - 1]).doubleValue(),
-                        proxy
-                    );
+                            source,
+                            getArea(owner),
+                            ((Number) args[0]).doubleValue(),
+                            ((Number) args[1]).doubleValue(),
+                            ((Number) args[args.length - 1]).doubleValue(),
+                            proxy);
                     if (result.isPresent()) {
                         return result;
                     }
@@ -170,8 +170,8 @@ public final class CreativeTabGridCompat {
                 double y = ((Number) args[1]).doubleValue();
                 double dy = ((Number) args[args.length - 1]).doubleValue();
                 if (dy != 0 && JeiInputAreaCompat.insideBand(x, y,
-                    JeiReflectionCompat.tryInvoke(owner, "getBackButtonArea"),
-                    JeiReflectionCompat.tryInvoke(owner, "getNextPageButtonArea"))) {
+                        JeiReflectionCompat.tryInvoke(owner, "getBackButtonArea"),
+                        JeiReflectionCompat.tryInvoke(owner, "getNextPageButtonArea"))) {
                     Object pages = JeiReflectionCompat.tryInvoke(owner, "getPageDelegate");
                     if (pages != null) {
                         JeiReflectionCompat.invokeNoArgsUnchecked(pages, dy < 0 ? "nextPage" : "previousPage");

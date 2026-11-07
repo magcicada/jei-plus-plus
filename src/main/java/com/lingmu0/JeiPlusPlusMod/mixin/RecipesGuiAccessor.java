@@ -14,6 +14,4 @@ public interface RecipesGuiAccessor {
     @Accessor("logic")
     IRecipeGuiLogic jeiPlusPlus$getLogic();
 
-
-
 }

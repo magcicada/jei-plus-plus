@@ -12,7 +12,7 @@ public abstract class JeiIngredientOverlayInputMixin implements JeiExtraInputAre
     @Override
     public boolean jeiPlusPlus$containsExtraInput(double x, double y) {
         return Boolean.TRUE.equals(JeiReflectionCompat.tryInvoke(this, "isListDisplayed"))
-            && CreativeTabGridCompat.containsExtraInput(JeiReflectionCompat.readField(this, "contents"), x, y);
+                && CreativeTabGridCompat.containsExtraInput(JeiReflectionCompat.readField(this, "contents"), x, y);
     }
 
     @Override
@@ -20,17 +20,9 @@ public abstract class JeiIngredientOverlayInputMixin implements JeiExtraInputAre
         return CreativeTabGridCompat.ownsSelector(JeiReflectionCompat.readField(this, "contents"));
     }
 
-    @ModifyArg(
-        method = "createInputArea",
-        at = @At(
-            value = "INVOKE",
-            target = "Lmezz/jei/gui/input/InputArea$Builder;controls(Lmezz/jei/common/input/IInputTarget;)Lmezz/jei/gui/input/InputArea$Builder;"
-        ),
-        index = 0,
-        remap = false
-    )
+    @ModifyArg(method = "createInputArea", at = @At(value = "INVOKE", target = "Lmezz/jei/gui/input/InputArea$Builder;controls(Lmezz/jei/common/input/IInputTarget;)Lmezz/jei/gui/input/InputArea$Builder;"), index = 0, remap = false)
     private IInputTarget jeiPlusPlus$priorityInput(IInputTarget original) {
         return (IInputTarget) CreativeTabGridCompat.wrapInput(
-            JeiReflectionCompat.readField(this, "contents"), original);
+                JeiReflectionCompat.readField(this, "contents"), original);
     }
 }

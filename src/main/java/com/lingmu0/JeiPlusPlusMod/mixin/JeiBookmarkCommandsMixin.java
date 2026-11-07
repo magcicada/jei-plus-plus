@@ -7,10 +7,11 @@ import java.util.Optional;
 
 /** The new JEI command path already falls back to the hovered ingredient when no recipe bookmark exists. */
 @Pseudo
-@Mixin(targets="mezz.jei.gui.input.handlers.BookmarkCommands", remap=false)
+@Mixin(targets = "mezz.jei.gui.input.handlers.BookmarkCommands", remap = false)
 public abstract class JeiBookmarkCommandsMixin {
-    @Inject(method="prepareRecipeBookmarkAction", at=@At("HEAD"), cancellable=true, remap=false)
+    @Inject(method = "prepareRecipeBookmarkAction", at = @At("HEAD"), cancellable = true, remap = false)
     private void jeiPlusPlus$preference(@Coerce Object input, CallbackInfoReturnable<Optional<?>> cir) {
-        if (!JeiPlusPlusConfig.PREFER_RECIPE_BOOKMARK_ON_OUTPUT.get()) cir.setReturnValue(Optional.empty());
+        if (!JeiPlusPlusConfig.PREFER_RECIPE_BOOKMARK_ON_OUTPUT.get())
+            cir.setReturnValue(Optional.empty());
     }
 }

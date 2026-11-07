@@ -2,7 +2,6 @@ package com.lingmu0.JeiPlusPlusMod.client;
 
 import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
 import com.mojang.blaze3d.platform.InputConstants;
-import mezz.jei.common.input.UserInput;
 import mezz.jei.common.util.ImmutableRect2i;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -162,14 +161,13 @@ public final class CreativeTabBar {
     public static boolean handleClick(
             IngredientListFeatureSource source,
             ImmutableRect2i area,
-        Object input
-    ) {
+            Object input) {
         if (source != null && source.jeiPlusPlus$isCreativeTabSelectorOpen()) {
             return CreativeTabSelector.handleClick(source, area, input);
         }
         if (!isEnabled(source)
-            || JeiReflectionCompat.inputKey(input).getType() != InputConstants.Type.MOUSE
-            || !area.contains(JeiReflectionCompat.inputMouseX(input), JeiReflectionCompat.inputMouseY(input))) {
+                || JeiReflectionCompat.inputKey(input).getType() != InputConstants.Type.MOUSE
+                || !area.contains(JeiReflectionCompat.inputMouseX(input), JeiReflectionCompat.inputMouseY(input))) {
             return false;
         }
         if (JeiReflectionCompat.inputKey(input).getValue() == 1) {
@@ -185,8 +183,10 @@ public final class CreativeTabBar {
         int capacity = getCapacity(area);
         int pageCount = getPageCount(source.jeiPlusPlus$getCreativeTabs().size() + 1, capacity);
         int page = clampPage(source.jeiPlusPlus$getCreativeTabPage(), pageCount);
-        boolean previous = isPageButton(area, JeiReflectionCompat.inputMouseX(input), JeiReflectionCompat.inputMouseY(input), true);
-        boolean next = isPageButton(area, JeiReflectionCompat.inputMouseX(input), JeiReflectionCompat.inputMouseY(input), false);
+        boolean previous = isPageButton(area, JeiReflectionCompat.inputMouseX(input),
+                JeiReflectionCompat.inputMouseY(input), true);
+        boolean next = isPageButton(area, JeiReflectionCompat.inputMouseX(input),
+                JeiReflectionCompat.inputMouseY(input), false);
         if (previous || next) {
             if (!JeiReflectionCompat.isInputSimulated(input)) {
                 int target = page + (next ? 1 : -1);
@@ -195,7 +195,8 @@ public final class CreativeTabBar {
             return true;
         }
 
-        int tabIndex = getTabAt(source, area, JeiReflectionCompat.inputMouseX(input), JeiReflectionCompat.inputMouseY(input), page, capacity);
+        int tabIndex = getTabAt(source, area, JeiReflectionCompat.inputMouseX(input),
+                JeiReflectionCompat.inputMouseY(input), page, capacity);
         if (tabIndex < 0) {
             return false;
         }
@@ -212,8 +213,7 @@ public final class CreativeTabBar {
             double mouseX,
             double mouseY,
             double scrollDeltaY,
-        Object self
-    ) {
+            Object self) {
         if (source != null && source.jeiPlusPlus$isCreativeTabSelectorOpen()) {
             if (CreativeTabSelector.handleScroll(source, mouseX, mouseY, scrollDeltaY)) {
                 return Optional.of(self);

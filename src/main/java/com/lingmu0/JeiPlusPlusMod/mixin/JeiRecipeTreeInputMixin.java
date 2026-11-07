@@ -19,12 +19,14 @@ import java.util.Optional;
 public abstract class JeiRecipeTreeInputMixin {
     @Inject(method = "beginInput", at = @At("HEAD"), cancellable = true, remap = false)
     private void jeiPlusPlus$treeInput(Screen screen, @Coerce Object input, @Coerce Object keys,
-                                     CallbackInfoReturnable<Optional<Object>> cir) {
+            CallbackInfoReturnable<Optional<Object>> cir) {
         InputConstants.Key key = JeiReflectionCompat.inputKey(input);
         RecipeGuiLayouts layouts = (RecipeGuiLayouts) (Object) this;
         if (key.getType() != InputConstants.Type.MOUSE || key.getValue() != 0
-            || !RecipeTreeOverlay.canClick(layouts, JeiReflectionCompat.inputMouseX(input), JeiReflectionCompat.inputMouseY(input))) return;
-        cir.setReturnValue(Optional.of(JeiReflectionCompat.inputAction(release ->
-            RecipeTreeOverlay.click(layouts, JeiReflectionCompat.inputMouseX(release), JeiReflectionCompat.inputMouseY(release), 0))));
+                || !RecipeTreeOverlay.canClick(layouts, JeiReflectionCompat.inputMouseX(input),
+                        JeiReflectionCompat.inputMouseY(input)))
+            return;
+        cir.setReturnValue(Optional.of(JeiReflectionCompat.inputAction(release -> RecipeTreeOverlay.click(layouts,
+                JeiReflectionCompat.inputMouseX(release), JeiReflectionCompat.inputMouseY(release), 0))));
     }
 }

@@ -27,24 +27,23 @@ public abstract class IngredientGridWithNavigationMixin {
 
     @Inject(method = "drawForeground", at = @At("TAIL"), remap = false)
     private void jeiPlusPlus$drawCreativeTabs(Minecraft minecraft, GuiGraphics graphics, int mouseX, int mouseY,
-                                               float partialTicks, CallbackInfo ci) {
+            float partialTicks, CallbackInfo ci) {
         CreativeTabGridCompat.draw(this, graphics, mouseX, mouseY);
     }
 
     @Inject(method = "drawTooltips", at = @At("TAIL"), remap = false)
     private void jeiPlusPlus$drawCreativeTabTooltip(Minecraft minecraft, GuiGraphics graphics, int mouseX, int mouseY,
-                                                     CallbackInfo ci) {
+            CallbackInfo ci) {
         CreativeTabGridCompat.drawTooltip(this, graphics, mouseX, mouseY);
     }
 
     @Inject(method = "drawTooltips", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private void jeiPlusPlus$hideUnderlyingTooltipsWhileSelectorOpen(
-        Minecraft minecraft,
-        GuiGraphics graphics,
-        int mouseX,
-        int mouseY,
-        CallbackInfo ci
-    ) {
+            Minecraft minecraft,
+            GuiGraphics graphics,
+            int mouseX,
+            int mouseY,
+            CallbackInfo ci) {
         if (CreativeTabGridCompat.isSelectorOpen(this)) {
             CreativeTabGridCompat.drawTooltip(this, graphics, mouseX, mouseY);
             ci.cancel();
@@ -58,10 +57,9 @@ public abstract class IngredientGridWithNavigationMixin {
 
     @Inject(method = "getIngredientUnderMouse", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private void jeiPlusPlus$blockIngredientLookupWhileSelectorOpen(
-        double mouseX,
-        double mouseY,
-        CallbackInfoReturnable<Stream<IClickableIngredientInternal<?>>> cir
-    ) {
+            double mouseX,
+            double mouseY,
+            CallbackInfoReturnable<Stream<IClickableIngredientInternal<?>>> cir) {
         if (CreativeTabGridCompat.isSelectorOpen(this)) {
             cir.setReturnValue(Stream.empty());
         }
@@ -69,10 +67,9 @@ public abstract class IngredientGridWithNavigationMixin {
 
     @Inject(method = "getDraggableIngredientUnderMouse", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private void jeiPlusPlus$blockIngredientDragWhileSelectorOpen(
-        double mouseX,
-        double mouseY,
-        CallbackInfoReturnable<Stream<IDraggableIngredientInternal<?>>> cir
-    ) {
+            double mouseX,
+            double mouseY,
+            CallbackInfoReturnable<Stream<IDraggableIngredientInternal<?>>> cir) {
         if (CreativeTabGridCompat.isSelectorOpen(this)) {
             cir.setReturnValue(Stream.empty());
         }
