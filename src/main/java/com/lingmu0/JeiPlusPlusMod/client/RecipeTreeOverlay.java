@@ -24,6 +24,8 @@ public final class RecipeTreeOverlay {
     }
 
     public static void draw(RecipeGuiLayouts layouts, GuiGraphics graphics, int mouseX, int mouseY) {
+        if (DirectoryRecipePlugin.usesNativeRecipeButtons())
+            return;
         if (!JeiPlusPlusConfig.RECIPE_TREE_ENABLED.get()) {
             return;
         }
@@ -64,16 +66,22 @@ public final class RecipeTreeOverlay {
     }
 
     public static boolean canClick(RecipeGuiLayouts layouts, double mouseX, double mouseY) {
-        if (!JeiPlusPlusConfig.RECIPE_TREE_ENABLED.get()) return false;
+        if (DirectoryRecipePlugin.usesNativeRecipeButtons())
+            return false;
+        if (!JeiPlusPlusConfig.RECIPE_TREE_ENABLED.get())
+            return false;
         for (LayoutWrapper wrapper : wrappers(layouts)) {
             if ((contains(buttonArea(wrapper, 0), mouseX, mouseY)
-                || contains(buttonArea(wrapper, 1), mouseX, mouseY))
-                && RecipeTreeData.snapshot(wrapper.layout()).isPresent()) return true;
+                    || contains(buttonArea(wrapper, 1), mouseX, mouseY))
+                    && RecipeTreeData.snapshot(wrapper.layout()).isPresent())
+                return true;
         }
         return false;
     }
 
     public static boolean click(RecipeGuiLayouts layouts, double mouseX, double mouseY, int button) {
+        if (DirectoryRecipePlugin.usesNativeRecipeButtons())
+            return false;
         if (!JeiPlusPlusConfig.RECIPE_TREE_ENABLED.get() || button != 0) {
             return false;
         }
@@ -103,6 +111,8 @@ public final class RecipeTreeOverlay {
      * grows the layout only when a new column is required.
      */
     public static int extraWidth(RecipeGuiLayouts layouts, int baseWidth) {
+        if (DirectoryRecipePlugin.usesNativeRecipeButtons())
+            return 0;
         if (!JeiPlusPlusConfig.RECIPE_TREE_ENABLED.get()) {
             return 0;
         }
@@ -196,14 +206,18 @@ public final class RecipeTreeOverlay {
             IRecipeLayoutDrawable<?> layout = invokeLayout(wrapper, "getRecipeLayout", "recipeLayout");
             Object transferButton = invoke(wrapper, "transferButton");
             Object bookmarkButton = invoke(wrapper, "bookmarkButton");
-            if (layout == null) return null;
+            if (layout == null)
+                return null;
             if (transferButton == null || bookmarkButton == null) {
                 // Interaction-based JEI replaced the record controls with an ordered button list.
                 Object controls = JeiReflectionCompat.readField(wrapper, "buttons");
-                if (!(controls instanceof List<?> buttons)) return null;
+                if (!(controls instanceof List<?> buttons))
+                    return null;
                 return new LayoutWrapper(layout,
-                    !buttons.isEmpty() && Boolean.TRUE.equals(JeiReflectionCompat.tryInvoke(buttons.get(0), "isVisible")),
-                    buttons.size() > 1 && Boolean.TRUE.equals(JeiReflectionCompat.tryInvoke(buttons.get(1), "isVisible")));
+                        !buttons.isEmpty()
+                                && Boolean.TRUE.equals(JeiReflectionCompat.tryInvoke(buttons.get(0), "isVisible")),
+                        buttons.size() > 1
+                                && Boolean.TRUE.equals(JeiReflectionCompat.tryInvoke(buttons.get(1), "isVisible")));
             }
             return new LayoutWrapper(
                     layout,
