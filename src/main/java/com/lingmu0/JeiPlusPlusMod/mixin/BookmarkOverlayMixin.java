@@ -8,7 +8,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.*;
@@ -113,6 +115,8 @@ public abstract class BookmarkOverlayMixin implements JeiExtraInputArea {
                             return Optional.empty();
                         int button = input.getKey().getValue();
                         return Optional.of(new mezz.jei.common.input.interaction.InputAction(release -> {
+                            Minecraft.getInstance().getSoundManager()
+                                    .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
                             if (button == 1)
                                 RecipeTreeSession.clear();
                             if (screen instanceof RecipeTreeScreen treeScreen)
