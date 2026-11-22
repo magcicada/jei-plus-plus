@@ -51,20 +51,22 @@ public final class Ae2PatternClient {
         for (RecipeTreeData.Node child : node.children())
             collect(child, plans, seen);
         RecipeTreeData.RecipeSnapshot recipe = node.recipe();
-        if (recipe == null || recipe.inputs().isEmpty() || recipe.outputs().isEmpty()
+        if (recipe == null || recipe.unsupportedInputs() || recipe.inputs().isEmpty() || recipe.outputs().isEmpty()
                 || recipe.inputSlotCount() > 9
                 || plans.size() >= RecipeTreeData.MAX_NODES)
             return;
         ItemStack[] inputs = new ItemStack[Math.min(9, recipe.inputSlotCount())];
         Arrays.fill(inputs, ItemStack.EMPTY);
+        String[] inputSignature = new String[inputs.length];
         boolean substitute = false;
         for (RecipeTreeData.RecipeInput input : recipe.inputs()) {
             ItemStack chosen = input.first();
             boolean pinned = false;
+            boolean chemicalSlot = MekanismChemicalIngredient.hasChemical(input.alternatives());
             for (RecipeTreeData.Node child : node.children()) {
-                if (child.inputSlotIndexes().equals(input.slotIndexes()) && child.explicitChoice()) {
+                if (child.inputSlotIndexes().equals(input.slotIndexes()) && (child.explicitChoice() || chemicalSlot)) {
                     chosen = child.stack();
-                    pinned = true;
+                    pinned = child.explicitChoice();
                     break;
                 }
             }
@@ -72,11 +74,10 @@ public final class Ae2PatternClient {
                 substitute = true;
             for (int slot : input.slotIndexes()) {
                 if (slot >= 0 && slot < inputs.length) {
-                    inputs[slot] = chosen.copy();
-                    if (input.slotIndexes().size() > 1 && !inputs[slot].isEmpty()) {
-                        inputs[slot].setCount(Math.max(1,
-                                (chosen.getCount() + input.slotIndexes().size() - 1) / input.slotIndexes().size()));
-                    }
+                    int count = (int) ((chosen.getCount() + (long) input.slotIndexes().size() - 1) / input.slotIndexes().size());
+                    inputs[slot] = MekanismChemicalIngredient.patternInput(chosen, count);
+                    if (!chosen.isEmpty() && inputs[slot].isEmpty()) return;
+                    inputSignature[slot] = RecipeTreeData.ingredientKey(chosen) + "=" + count;
                 }
             }
         }
@@ -85,9 +86,7 @@ public final class Ae2PatternClient {
         List<ItemStack> outputs = List.of(node.stack().copy());
         ResourceLocation id = ResourceLocation.tryParse(recipe.ref().registryId());
         // A stable signature avoids producing duplicate patterns for repeated tree nodes.
-        String signature = recipe.ref().key() + Arrays.toString(Arrays.stream(inputs)
-                .map(RecipeTreeData::ingredientKey).toArray()) + substitute;
-        if (seen.add(signature))
-            plans.add(new Ae2PatternPlan(id, Arrays.asList(inputs), outputs, substitute));
+        String signature = recipe.ref().key() + Arrays.toString(inputSignature) + substitute;
+        if (seen.add(signature)) plans.add(new Ae2PatternPlan(id, Arrays.asList(inputs), outputs, substitute));
     }
 }

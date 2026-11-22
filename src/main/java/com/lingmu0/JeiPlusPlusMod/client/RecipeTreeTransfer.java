@@ -2,6 +2,7 @@ package com.lingmu0.JeiPlusPlusMod.client;
 
 import com.lingmu0.JeiPlusPlusMod.mixin.BasicRecipeTransferHandlerAccessor;
 import mezz.jei.api.constants.VanillaTypes;
+import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
@@ -71,6 +72,8 @@ public final class RecipeTreeTransfer {
     private static ItemStack pendingAe2OutputStack = ItemStack.EMPTY;
     private static long pendingAe2InventoryBefore;
     private static boolean pendingVanillaPickup;
+    private static SophisticatedCrafting.Grid pausedCraftingRefill;
+    private static SophisticatedCrafting.Sync sophisticatedSync;
     private static int pendingPickupAttempts;
     private static int waitFrames;
     private static int emptyFrames;
@@ -80,6 +83,25 @@ public final class RecipeTreeTransfer {
 
     public static void cancel() {
         clearPending();
+    }
+
+    public static void beforeContainerClose(AbstractContainerMenu menu) {
+        if ((pausedCraftingRefill != null && pausedCraftingRefill.menu() == menu)
+            || (sophisticatedSync != null && sophisticatedSync.grid().menu() == menu)) {
+            clearPending();
+        }
+    }
+
+    public static void updateSophisticatedSlot(int containerId, int slot, ItemStack stack) {
+        if (sophisticatedSync != null && sophisticatedSync.grid().menu().containerId == containerId) {
+            sophisticatedSync.updateSlot(slot, stack);
+        }
+    }
+
+    public static void updateSophisticatedContents(int containerId) {
+        if (sophisticatedSync != null && sophisticatedSync.grid().menu().containerId == containerId) {
+            sophisticatedSync.updateAll();
+        }
     }
 
     public static boolean canTransfer(RecipeTreeData.CraftStep step, boolean recursive) {
@@ -146,6 +168,11 @@ public final class RecipeTreeTransfer {
             return;
         }
         if (waitFrames-- > 0) {
+            return;
+        }
+
+        if (sophisticatedSync != null) {
+            tickSophisticatedCraft(screen.getMenu(), minecraft);
             return;
         }
 
@@ -556,6 +583,10 @@ public final class RecipeTreeTransfer {
         PendingCraft craft = pendingCrafts.get(pendingCraftIndex);
         AbstractContainerMenu menu = screen.getMenu();
         Minecraft minecraft = Minecraft.getInstance();
+        SophisticatedCrafting.Grid grid = sophisticatedGrid(menu, craft.step);
+        if (grid != null) {
+            return startSophisticatedCraft(grid, craft, minecraft);
+        }
         int resultSlot = instantResultSlot(menu);
         boolean genericResult = resultSlot < 0
                 && hasGenericResultSlot(menu, minecraft.player);
@@ -594,6 +625,85 @@ public final class RecipeTreeTransfer {
         waitFrames = 3;
         emptyFrames = 0;
         return true;
+    }
+
+    private static SophisticatedCrafting.Grid sophisticatedGrid(AbstractContainerMenu menu, RecipeTreeData.CraftStep step) {
+        return RecipeTypes.CRAFTING.equals(step.recipe().category().getRecipeType())
+            ? SophisticatedCrafting.openGrid(menu) : null;
+    }
+
+    private static SophisticatedCrafting.Plan sophisticatedPlan(
+        SophisticatedCrafting.Grid grid, IRecipeLayoutDrawable<?> layout, List<String> selectedInputs,
+        int batches, boolean recursiveCandidates, Player player
+    ) {
+        List<ItemStack> templates = new ArrayList<>();
+        for (IRecipeSlotView slot : layout.getRecipeSlotsView().getSlotViews(RecipeIngredientRole.INPUT)) {
+            int index = templates.size();
+            String key = index < selectedInputs.size() ? selectedInputs.get(index) : "";
+            ItemStack ingredient = selectedInput(slot, key, recursiveCandidates).orElse(ItemStack.EMPTY);
+            if (ingredient.isEmpty() && !slot.isEmpty()) return null;
+            templates.add(ingredient);
+        }
+        return SophisticatedCrafting.plan(grid, templates, batches, player);
+    }
+
+    private static boolean startSophisticatedCraft(
+        SophisticatedCrafting.Grid grid, PendingCraft craft, Minecraft minecraft
+    ) {
+        if (pausedCraftingRefill != null && pausedCraftingRefill.upgrade() != grid.upgrade()) {
+            clearPending();
+            return false;
+        }
+        IRecipeLayoutDrawable<?> layout = RecipeTreeData.createLayout(craft.step.recipe()).orElse(null);
+        int batches = (int) Math.min(Integer.MAX_VALUE, craft.remainingBatches);
+        SophisticatedCrafting.Plan plan = layout == null || minecraft.player == null ? null
+            : sophisticatedPlan(grid, layout, craft.step.selectedInputs(), batches, true, minecraft.player);
+        if (plan == null) {
+            clearPending();
+            return false;
+        }
+        if (grid.isRefillEnabled()) {
+            if (!grid.setRefill(false)) {
+                clearPending();
+                return false;
+            }
+            pausedCraftingRefill = grid;
+        }
+        sophisticatedSync = new SophisticatedCrafting.Sync(grid);
+        sophisticatedSync.expectInputs(plan.expected());
+        if (!plan.fill(minecraft.player)) {
+            clearPending();
+            return false;
+        }
+        pendingMenuId = grid.menu().containerId;
+        pendingLoadedBatches = plan.batches();
+        pendingVanillaPickup = false;
+        return true;
+    }
+
+    private static void tickSophisticatedCraft(AbstractContainerMenu menu, Minecraft minecraft) {
+        SophisticatedCrafting.Sync sync = sophisticatedSync;
+        SophisticatedCrafting.Grid grid = sync.grid();
+        if (menu != grid.menu() || !grid.isOpen() || sync.timedOut()) {
+            clearPending();
+            return;
+        }
+        if (pendingVanillaPickup) {
+            // Client prediction can consume the result before the server applies the click.
+            if (sync.pickupConfirmed()) {
+                sophisticatedSync = null;
+                pendingChunk = pendingLoadedBatches;
+                completePendingCraft();
+            }
+            return;
+        }
+        RecipeTreeData.CraftStep step = pendingCrafts.get(pendingCraftIndex).step;
+        if (!sync.inputsReady() || !isExpectedCraftOutput(step, sync.result())
+            || !ItemStack.matches(sync.result(), grid.result().getItem()) || !menu.getCarried().isEmpty()) return;
+
+        sync.awaitPickup();
+        pendingVanillaPickup = true;
+        minecraft.gameMode.handleInventoryMouseClick(menu.containerId, grid.result().index, 0, ClickType.QUICK_MOVE, minecraft.player);
     }
 
     /**
@@ -791,7 +901,14 @@ public final class RecipeTreeTransfer {
             return false;
         }
         AbstractContainerMenu menu = screen.getMenu();
-        // Prefer JEI's normal container-transfer handler. It is the safest
+        SophisticatedCrafting.Grid grid = sophisticatedGrid(menu, step);
+        if (grid != null && !maxTransfer) {
+            SophisticatedCrafting.Plan plan = sophisticatedPlan(
+                grid, layout, step.selectedInputs(), batches, recursiveCandidates, player
+            );
+            return plan != null && (!doTransfer || plan.fill(player));
+        }
+        // Prefer JEI's normal container-transfer handler.  It is the safest
         // path for ordinary menus and for network mods that already expose a
         // JEI handler. The reflective network packet is only the fallback
         // for a fake-slot terminal where no generic handler can move items.
@@ -1325,6 +1442,13 @@ public final class RecipeTreeTransfer {
     }
 
     private static void clearPending() {
+        SophisticatedCrafting.Grid paused = pausedCraftingRefill;
+        pausedCraftingRefill = null;
+        sophisticatedSync = null;
+        if (paused != null) {
+            var player = Minecraft.getInstance().player;
+            if (player != null && player.containerMenu == paused.menu()) paused.setRefill(true);
+        }
         pendingCrafts = List.of();
         pendingCraftIndex = 0;
         pendingMenuId = -1;

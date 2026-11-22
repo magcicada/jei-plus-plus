@@ -110,6 +110,7 @@ final class FluidRecipeCompat {
 
     static void clear() {
         DISPLAY_FLUIDS.clear();
+        MekanismChemicalIngredient.clear();
         FLUID_REPRESENTATIONS.clear();
         FLUID_ACCESSORS.clear();
     }
@@ -276,6 +277,9 @@ final class FluidRecipeCompat {
     }
 
     static Optional<ITypedIngredient<?>> toTyped(IIngredientManager manager, ItemStack stack) {
+        if (!MekanismChemicalIngredient.key(stack).isEmpty()) {
+            return MekanismChemicalIngredient.typed(stack);
+        }
         if (manager == null || stack == null || stack.isEmpty()) {
             return Optional.empty();
         }
@@ -394,6 +398,7 @@ final class FluidRecipeCompat {
 
     static ItemStack copyWithDisplay(ItemStack stack) {
         ItemStack copy = stack == null ? ItemStack.EMPTY : stack.copy();
+        MekanismChemicalIngredient.copyDisplay(stack, copy);
         if (stack != null) {
             FluidStack fluid = DISPLAY_FLUIDS.get(stack);
             if (fluid != null) {
@@ -404,6 +409,7 @@ final class FluidRecipeCompat {
     }
 
     static boolean render(GuiGraphics graphics, ItemStack stack, int x, int y) {
+        if (MekanismChemicalIngredient.render(graphics, stack, x, y)) return true;
         Optional<FluidStack> value = treeFluid(stack);
         if (value.isEmpty()) {
             return false;
@@ -420,6 +426,7 @@ final class FluidRecipeCompat {
     }
 
     static boolean renderTooltip(GuiGraphics graphics, ItemStack stack, int mouseX, int mouseY) {
+        if (MekanismChemicalIngredient.renderTooltip(graphics, stack, mouseX, mouseY)) return true;
         Optional<FluidStack> value = treeFluid(stack);
         if (value.isEmpty()) {
             return false;

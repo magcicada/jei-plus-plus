@@ -1,0 +1,25 @@
+diff --git a/build.gradle b/build.gradle
+index 226a030..f19c423 100644
+--- a/build.gradle
++++ b/build.gradle
+@@ -240,7 +240,7 @@ tasks.register('testRecipeTreeMaterials', JavaExec) {
+     classpath = sourceSets.test.runtimeClasspath
+     mainClass = 'com.lingmu0.JeiPlusPlusMod.client.RecipeTreeOutputChoicesTest'
+ }
+-// Scene regression fixtures use the same JEI 15.74 compile baseline.
++// Scene regression fixtures use the same JEI compile baseline.
+ sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
+ 
+ tasks.register('testJeiInputBridge', JavaExec) {
+diff --git a/gradle.properties b/gradle.properties
+index f6d12cd..b964ebe 100644
+--- a/gradle.properties
++++ b/gradle.properties
+@@ -47,5 +47,5 @@ mod_group_id=com.lingmu0
+ mod_authors=lingmu0
+ # The description of the mod. This is a simple multiline text string that is used for display purposes in the mod list.
+ mod_description=
+-jei_version=15.74.0.233
+-jei_version_range=[15.74.0.233,16)
++jei_version=15.75.0.242
++jei_version_range=[15.75.0.242,16)

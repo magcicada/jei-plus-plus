@@ -1,0 +1,1696 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 8d9b175..17631bd 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,5 +1,23 @@
+ # 更新日志 / Changelog
+ 
++## 1.1.0 — 2026-11-21
++
++### 中文
++
++- 配方树支持通用机械的灌注材料。冶金灌注配方可以选用固体材料或灌注材料，候选材料提示框会显示正确的图标。
++- 在 AE2 能识别通用机械化学品的环境中，配方树可批量制作包含灌注材料的处理样板。此功能需要服务端安装 JEI++。
++- 支持精妙存储和精妙背包的合成升级。打开合成升级后，可以转移配方、按槽位容量分批自动合成，并高亮相关槽位。
++- 沿用此分支针对 JEI 15.74+ 的物品列表、书签输入和原生按钮实现。
++- 调整合成模式书签的工作方块小图标层级，让悬浮提示显示在其上方。
++
++### English
++
++- Added Mekanism infusion chemicals to the recipe tree. Metallurgic Infuser recipes can use either solid materials or infusion chemicals, with the correct icons in the alternatives tooltip.
++- When AE2 supports Mekanism chemical keys, recipe-tree bulk pattern encoding can include infusion chemicals in processing patterns. This feature requires JEI++ on the server.
++- Added support for Crafting Upgrades in Sophisticated Storage and Sophisticated Backpacks. With the crafting upgrade open, the recipe tree can transfer recipes, craft in batches sized to the available slots, and highlight relevant slots.
++- Uses this branch’s JEI 15.74+ input hooks and native buttons for the ingredient list and bookmarks.
++- Moved the workstation icon on crafting-mode bookmarks below the tooltip layer.
++
+ ## 1.0.8a — 2026-10-26
+ 
+ ### 中文
+diff --git a/gradle.properties b/gradle.properties
+index 2688703..f6d12cd 100644
+--- a/gradle.properties
++++ b/gradle.properties
+@@ -38,7 +38,7 @@ mod_name=JEI++
+ # The license of the mod. Review your options at https://choosealicense.com/. All Rights Reserved is the default.
+ mod_license=ARR
+ # The mod version. See https://semver.org/
+-mod_version=1.0.9-1.20.1
++mod_version=1.1.0-1.20.1
+ # The group ID for the mod. It is only important when publishing as an artifact to a Maven repository.
+ # This should match the base package used for the mod sources.
+ # See https://maven.apache.org/guides/mini/guide-naming-conventions.html
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/Ae2ChemicalCompat.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/Ae2ChemicalCompat.java
+new file mode 100644
+index 0000000..e50581a
+--- /dev/null
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/Ae2ChemicalCompat.java
+@@ -0,0 +1,48 @@
++package com.lingmu0.JeiPlusPlusMod;
++
++import net.minecraft.world.item.ItemStack;
++
++import java.lang.reflect.Method;
++
++/** Optional bridge to Applied Mekanistics' registered AE2 key type. */
++public final class Ae2ChemicalCompat {
++    private static final String KEY = "me.ramidzkh.mekae2.ae2.MekanismKey";
++    private static final String GENERIC = "appeng.api.stacks.GenericStack";
++
++    private Ae2ChemicalCompat() {}
++
++    public static boolean isChemicalKey(Object key) {
++        return key != null && key.getClass().getName().equals(KEY);
++    }
++
++    public static ItemStack wrap(Object chemical, long amount) {
++        if (amount <= 0) return ItemStack.EMPTY;
++        try {
++            Class<?> keyClass = Class.forName(KEY);
++            for (Method factory : keyClass.getMethods()) {
++                if (!factory.getName().equals("of") || factory.getParameterCount() != 1
++                    || !factory.getParameterTypes()[0].isInstance(chemical)) continue;
++                Object key = factory.invoke(null, chemical);
++                if (key == null) return ItemStack.EMPTY;
++                Class<?> aeKey = Class.forName("appeng.api.stacks.AEKey");
++                return (ItemStack) Class.forName(GENERIC).getMethod("wrapInItemStack", aeKey, long.class)
++                    .invoke(null, key, amount);
++            }
++        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
++            // The recipe tree also works without AE2 or its optional addon.
++        }
++        return ItemStack.EMPTY;
++    }
++
++    public static boolean isWrapped(ItemStack stack) throws ReflectiveOperationException {
++        return Boolean.TRUE.equals(Class.forName(GENERIC).getMethod("isWrapped", ItemStack.class)
++            .invoke(null, stack));
++    }
++
++    static Object unwrapInput(ItemStack stack) throws ReflectiveOperationException {
++        Object generic = Class.forName(GENERIC).getMethod("unwrapItemStack", ItemStack.class).invoke(null, stack);
++        if (generic == null) return null;
++        long amount = (long) generic.getClass().getMethod("amount").invoke(generic);
++        return amount > 0 ? generic : null;
++    }
++}
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/Ae2PatternServer.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/Ae2PatternServer.java
+index 253f4b7..d975d7f 100644
+--- a/src/main/java/com/lingmu0/JeiPlusPlusMod/Ae2PatternServer.java
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/Ae2PatternServer.java
+@@ -139,8 +139,14 @@ public final class Ae2PatternServer {
+         Object[] inputs = (Object[]) java.lang.reflect.Array.newInstance(generic, 9);
+         Object[] outputs = (Object[]) java.lang.reflect.Array.newInstance(generic, 3);
+         for (int i = 0; i < Math.min(9, plan.inputs().size()); i++) {
+-            if (!plan.inputs().get(i).isEmpty())
+-                inputs[i] = fromItem.invoke(null, plan.inputs().get(i));
++            ItemStack input = plan.inputs().get(i);
++            if (input.isEmpty()) continue;
++            if (Ae2ChemicalCompat.isWrapped(input)) {
++                inputs[i] = Ae2ChemicalCompat.unwrapInput(input);
++                if (inputs[i] == null) return null;
++            } else {
++                inputs[i] = fromItem.invoke(null, input);
++            }
+         }
+         for (int i = 0; i < Math.min(3, plan.outputs().size()); i++) {
+             if (!plan.outputs().get(i).isEmpty())
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/Ae2PatternClient.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/Ae2PatternClient.java
+index 00501bd..23e101a 100644
+--- a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/Ae2PatternClient.java
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/Ae2PatternClient.java
+@@ -51,20 +51,22 @@ public final class Ae2PatternClient {
+         for (RecipeTreeData.Node child : node.children())
+             collect(child, plans, seen);
+         RecipeTreeData.RecipeSnapshot recipe = node.recipe();
+-        if (recipe == null || recipe.inputs().isEmpty() || recipe.outputs().isEmpty()
++        if (recipe == null || recipe.unsupportedInputs() || recipe.inputs().isEmpty() || recipe.outputs().isEmpty()
+                 || recipe.inputSlotCount() > 9
+                 || plans.size() >= RecipeTreeData.MAX_NODES)
+             return;
+         ItemStack[] inputs = new ItemStack[Math.min(9, recipe.inputSlotCount())];
+         Arrays.fill(inputs, ItemStack.EMPTY);
++        String[] inputSignature = new String[inputs.length];
+         boolean substitute = false;
+         for (RecipeTreeData.RecipeInput input : recipe.inputs()) {
+             ItemStack chosen = input.first();
+             boolean pinned = false;
++            boolean chemicalSlot = MekanismChemicalIngredient.hasChemical(input.alternatives());
+             for (RecipeTreeData.Node child : node.children()) {
+-                if (child.inputSlotIndexes().equals(input.slotIndexes()) && child.explicitChoice()) {
++                if (child.inputSlotIndexes().equals(input.slotIndexes()) && (child.explicitChoice() || chemicalSlot)) {
+                     chosen = child.stack();
+-                    pinned = true;
++                    pinned = child.explicitChoice();
+                     break;
+                 }
+             }
+@@ -72,11 +74,10 @@ public final class Ae2PatternClient {
+                 substitute = true;
+             for (int slot : input.slotIndexes()) {
+                 if (slot >= 0 && slot < inputs.length) {
+-                    inputs[slot] = chosen.copy();
+-                    if (input.slotIndexes().size() > 1 && !inputs[slot].isEmpty()) {
+-                        inputs[slot].setCount(Math.max(1,
+-                                (chosen.getCount() + input.slotIndexes().size() - 1) / input.slotIndexes().size()));
+-                    }
++                    int count = (int) ((chosen.getCount() + (long) input.slotIndexes().size() - 1) / input.slotIndexes().size());
++                    inputs[slot] = MekanismChemicalIngredient.patternInput(chosen, count);
++                    if (!chosen.isEmpty() && inputs[slot].isEmpty()) return;
++                    inputSignature[slot] = RecipeTreeData.ingredientKey(chosen) + "=" + count;
+                 }
+             }
+         }
+@@ -85,9 +86,7 @@ public final class Ae2PatternClient {
+         List<ItemStack> outputs = List.of(node.stack().copy());
+         ResourceLocation id = ResourceLocation.tryParse(recipe.ref().registryId());
+         // A stable signature avoids producing duplicate patterns for repeated tree nodes.
+-        String signature = recipe.ref().key() + Arrays.toString(Arrays.stream(inputs)
+-                .map(RecipeTreeData::ingredientKey).toArray()) + substitute;
+-        if (seen.add(signature))
+-            plans.add(new Ae2PatternPlan(id, Arrays.asList(inputs), outputs, substitute));
++        String signature = recipe.ref().key() + Arrays.toString(inputSignature) + substitute;
++        if (seen.add(signature)) plans.add(new Ae2PatternPlan(id, Arrays.asList(inputs), outputs, substitute));
+     }
+ }
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/Ae2StorageIntegration.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/Ae2StorageIntegration.java
+index d67bf52..9311fee 100644
+--- a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/Ae2StorageIntegration.java
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/Ae2StorageIntegration.java
+@@ -558,6 +558,11 @@ final class Ae2StorageIntegration {
+                 }
+                 continue;
+             }
++            var chemical = MekanismChemicalIngredient.fromNetworkKey(key);
++            if (chemical.isPresent()) {
++                stacks.add(new StoredStack(chemical.get(), amount));
++                continue;
++            }
+             Optional<FluidRecipeCompat.FluidInfo> info = FluidRecipeCompat.describeFluid(key);
+             if (info.isPresent()) {
+                 long fluidAmount = Math.max(amount, info.get().amount());
+@@ -860,7 +865,7 @@ final class Ae2StorageIntegration {
+         private final long amount;
+ 
+         private StoredStack(ItemStack stack, long amount) {
+-            this.stack = stack.copy();
++            this.stack = FluidRecipeCompat.copyWithDisplay(stack);
+             this.stack.setCount(1);
+             this.amount = amount;
+         }
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/FluidRecipeCompat.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/FluidRecipeCompat.java
+index 77bd79d..0fc8249 100644
+--- a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/FluidRecipeCompat.java
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/FluidRecipeCompat.java
+@@ -110,6 +110,7 @@ final class FluidRecipeCompat {
+ 
+     static void clear() {
+         DISPLAY_FLUIDS.clear();
++        MekanismChemicalIngredient.clear();
+         FLUID_REPRESENTATIONS.clear();
+         FLUID_ACCESSORS.clear();
+     }
+@@ -276,6 +277,9 @@ final class FluidRecipeCompat {
+     }
+ 
+     static Optional<ITypedIngredient<?>> toTyped(IIngredientManager manager, ItemStack stack) {
++        if (!MekanismChemicalIngredient.key(stack).isEmpty()) {
++            return MekanismChemicalIngredient.typed(stack);
++        }
+         if (manager == null || stack == null || stack.isEmpty()) {
+             return Optional.empty();
+         }
+@@ -394,6 +398,7 @@ final class FluidRecipeCompat {
+ 
+     static ItemStack copyWithDisplay(ItemStack stack) {
+         ItemStack copy = stack == null ? ItemStack.EMPTY : stack.copy();
++        MekanismChemicalIngredient.copyDisplay(stack, copy);
+         if (stack != null) {
+             FluidStack fluid = DISPLAY_FLUIDS.get(stack);
+             if (fluid != null) {
+@@ -404,6 +409,7 @@ final class FluidRecipeCompat {
+     }
+ 
+     static boolean render(GuiGraphics graphics, ItemStack stack, int x, int y) {
++        if (MekanismChemicalIngredient.render(graphics, stack, x, y)) return true;
+         Optional<FluidStack> value = treeFluid(stack);
+         if (value.isEmpty()) {
+             return false;
+@@ -420,6 +426,7 @@ final class FluidRecipeCompat {
+     }
+ 
+     static boolean renderTooltip(GuiGraphics graphics, ItemStack stack, int mouseX, int mouseY) {
++        if (MekanismChemicalIngredient.renderTooltip(graphics, stack, mouseX, mouseY)) return true;
+         Optional<FluidStack> value = treeFluid(stack);
+         if (value.isEmpty()) {
+             return false;
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/JeiInputAreaCompat.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/JeiInputAreaCompat.java
+index ba106aa..23fde93 100644
+--- a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/JeiInputAreaCompat.java
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/JeiInputAreaCompat.java
+@@ -1,9 +1,12 @@
+ package com.lingmu0.JeiPlusPlusMod.client;
+ 
++import mezz.jei.common.input.IInputTarget;
+ import mezz.jei.common.util.ImmutableRect2i;
++import mezz.jei.gui.input.InputArea;
+ import java.lang.reflect.Method;
+ import java.util.List;
+ import java.util.Optional;
++import java.util.function.UnaryOperator;
+ 
+ /** Bridges JEI's input-scene hit testing without replacing its controls or shortcuts. */
+ public final class JeiInputAreaCompat {
+@@ -23,6 +26,15 @@ public final class JeiInputAreaCompat {
+     private JeiInputAreaCompat() {
+     }
+ 
++    public static InputArea wrapControls(InputArea area, UnaryOperator<IInputTarget> wrapper) {
++        IInputTarget wrapped = wrapper.apply(area.controls());
++        if (wrapped == area.controls()) {
++            return area;
++        }
++        return new InputArea(area.name(), area.area(), area.blocksUnhandledMouseInput(), wrapped,
++                area.commands(), area.dragSources(), area.apiDragHandler(), area.keyboardNavigation());
++    }
++
+     public static Optional<?> selectTarget(List<?> areas, Optional<?> nativeTarget, double x, double y) {
+         // The picker covers the whole screen, including recipes and interactive tooltips.
+         for (Object area : areas) {
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/JeiTooltipCompat.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/JeiTooltipCompat.java
+index c99b38d..5a903ea 100644
+--- a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/JeiTooltipCompat.java
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/JeiTooltipCompat.java
+@@ -5,63 +5,50 @@ import mezz.jei.api.ingredients.IIngredientRenderer;
+ import mezz.jei.api.ingredients.ITypedIngredient;
+ import mezz.jei.api.runtime.IIngredientManager;
+ import mezz.jei.api.runtime.IJeiRuntime;
+-import net.minecraft.world.inventory.tooltip.TooltipComponent;
++import mezz.jei.common.gui.JeiTooltip;
++import mezz.jei.common.platform.Services;
++import mezz.jei.common.util.SafeIngredientUtil;
++import mezz.jei.library.gui.ingredients.TagContentTooltipComponent;
++import net.minecraft.ChatFormatting;
++import net.minecraft.network.chat.Component;
+ import net.minecraft.world.item.ItemStack;
+ 
+-import java.lang.reflect.Constructor;
+ import java.util.ArrayList;
+ import java.util.List;
+-import java.util.Optional;
+ 
+-/** Runtime bridge for JEI's changing tag-content tooltip component. */
++/** Builds JEI tooltips for the tree's item, fluid and chemical ingredients. */
+ final class JeiTooltipCompat {
+-    private static final String TAG_CONTENT_COMPONENT = "mezz.jei.library.gui.ingredients.TagContentTooltipComponent";
+-
+     private JeiTooltipCompat() {
+     }
+ 
+-    static Optional<TooltipComponent> createTagContent(
+-            IJeiRuntime runtime,
+-            IIngredientRenderer<ItemStack> renderer,
+-            List<ItemStack> alternatives) {
+-        if (runtime == null || renderer == null || alternatives == null || alternatives.isEmpty()) {
+-            return Optional.empty();
++    static <T> void addIngredientTooltip(JeiTooltip tooltip, IIngredientManager manager, ITypedIngredient<T> ingredient) {
++        IIngredientRenderer<T> renderer = manager.getIngredientRenderer(ingredient.getType());
++        SafeIngredientUtil.getRichTooltip(tooltip, manager, renderer, ingredient);
++    }
++
++    static void addAlternatives(JeiTooltip tooltip, IJeiRuntime runtime, List<ItemStack> alternatives) {
++        if (runtime == null || alternatives.size() < 2) return;
++
++        IIngredientManager manager = runtime.getIngredientManager();
++        List<ItemStack> displayStacks = new ArrayList<>();
++        List<ITypedIngredient<?>> ingredients = new ArrayList<>();
++        for (ItemStack stack : alternatives) {
++            if (stack == null || stack.isEmpty()) continue;
++            ItemStack display = FluidRecipeCompat.copyWithDisplay(stack);
++            display.setCount(1);
++            FluidRecipeCompat.toTyped(manager, display).ifPresent(typed -> {
++                displayStacks.add(display);
++                ingredients.add(typed);
++            });
+         }
+-        try {
+-            IIngredientManager manager = runtime.getIngredientManager();
+-            Class<?> componentType = Class.forName(TAG_CONTENT_COMPONENT);
+-            List<ITypedIngredient<?>> typed = new ArrayList<>();
+-            for (ItemStack stack : alternatives) {
+-                if (stack == null || stack.isEmpty()) {
+-                    continue;
+-                }
+-                manager.createTypedIngredient(VanillaTypes.ITEM_STACK, stack)
+-                        .ifPresent(value -> typed.add((ITypedIngredient<?>) value));
+-            }
+-            for (Constructor<?> constructor : componentType.getDeclaredConstructors()) {
+-                Class<?>[] parameters = constructor.getParameterTypes();
+-                if (parameters.length != 2 || parameters[1] != List.class) {
+-                    continue;
+-                }
+-                Object first;
+-                List<?> values;
+-                if (parameters[0].isAssignableFrom(manager.getClass())) {
+-                    // Newer JEI versions render typed ingredients through the manager.
+-                    first = manager;
+-                    values = typed;
+-                } else if (parameters[0].isAssignableFrom(renderer.getClass())) {
+-                    // Older JEI versions render raw values through the renderer.
+-                    first = renderer;
+-                    values = alternatives;
+-                } else {
+-                    continue;
+-                }
+-                constructor.trySetAccessible();
+-                return Optional.of((TooltipComponent) constructor.newInstance(first, values));
+-            }
+-        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
+-            // The extra tooltip is optional; the normal tag line remains.
++        if (ingredients.size() < 2) return;
++
++        if (ingredients.stream().allMatch(ingredient -> ingredient.getType() == VanillaTypes.ITEM_STACK)) {
++            manager.getIngredientHelper(VanillaTypes.ITEM_STACK).getTagKeyEquivalent(displayStacks).ifPresent(tag -> {
++                tooltip.add(Component.translatable("jei.tooltip.recipe.tag", "").withStyle(ChatFormatting.GRAY));
++                tooltip.add(Services.PLATFORM.getRenderHelper().getName(tag).copy().withStyle(ChatFormatting.GRAY));
++            });
+         }
+-        return Optional.empty();
++        tooltip.add(new TagContentTooltipComponent(manager, ingredients));
+     }
+ }
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/MekanismChemicalIngredient.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/MekanismChemicalIngredient.java
+new file mode 100644
+index 0000000..b8c31d1
+--- /dev/null
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/MekanismChemicalIngredient.java
+@@ -0,0 +1,132 @@
++package com.lingmu0.JeiPlusPlusMod.client;
++
++import com.lingmu0.JeiPlusPlusMod.Ae2ChemicalCompat;
++import mezz.jei.api.ingredients.ITypedIngredient;
++import net.minecraft.client.Minecraft;
++import net.minecraft.client.gui.GuiGraphics;
++import net.minecraft.network.chat.Component;
++import net.minecraft.world.item.ItemStack;
++import net.minecraft.world.item.Items;
++
++import java.util.List;
++import java.util.Map;
++import java.util.Optional;
++import java.util.WeakHashMap;
++
++/** Adapts a JEI chemical ingredient to the tree's stack and quantity model. */
++final class MekanismChemicalIngredient {
++    private record Chemical(String key, Object value, ITypedIngredient<?> typed, long amount) {}
++
++    private static final String STACK = "mekanism.api.chemical.infuse.InfusionStack";
++    private static final Map<ItemStack, Chemical> DISPLAY = new WeakHashMap<>();
++
++    private MekanismChemicalIngredient() {}
++
++    static void clear() {
++        DISPLAY.clear();
++    }
++
++    static boolean isChemical(ITypedIngredient<?> typed) {
++        return typed != null && typed.getIngredient() != null
++            && STACK.equals(typed.getIngredient().getClass().getName());
++    }
++
++    static Optional<ItemStack> fromIngredient(ITypedIngredient<?> typed) {
++        if (!isChemical(typed)) return Optional.empty();
++        Object value = typed.getIngredient();
++        try {
++            long amount = amountOf(value);
++            String key = keyOf(value);
++            if (key.isEmpty() || amount <= 0 || amount > Integer.MAX_VALUE) return Optional.empty();
++            return Optional.of(create(new Chemical(key, value, typed, amount), (int) amount));
++        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
++            return Optional.empty();
++        }
++    }
++
++    static Optional<ItemStack> fromNetworkKey(Object key) {
++        if (!Ae2ChemicalCompat.isChemicalKey(key)) return Optional.empty();
++        try {
++            Object value = key.getClass().getMethod("getStack").invoke(key);
++            if (value == null || !STACK.equals(value.getClass().getName())) return Optional.empty();
++            String id = keyOf(value);
++            return id.isEmpty() ? Optional.empty() : Optional.of(create(new Chemical(id, value, null, 1), 1));
++        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
++            return Optional.empty();
++        }
++    }
++
++    static long amountOf(Object chemical) throws ReflectiveOperationException {
++        return ((Number) chemical.getClass().getMethod("getAmount").invoke(chemical)).longValue();
++    }
++
++    static String keyOf(Object chemical) throws ReflectiveOperationException {
++        Object id = chemical.getClass().getMethod("getTypeRegistryName").invoke(chemical);
++        return id == null ? "" : "mek_chemical:" + id;
++    }
++
++    private static ItemStack create(Chemical chemical, int amount) {
++        ItemStack stack = new ItemStack(Items.BARRIER, amount);
++        DISPLAY.put(stack, chemical);
++        return stack;
++    }
++
++    static void copyDisplay(ItemStack source, ItemStack target) {
++        Chemical chemical = DISPLAY.get(source);
++        if (chemical != null && !target.isEmpty()) DISPLAY.put(target, chemical);
++    }
++
++    static String key(ItemStack stack) {
++        Chemical chemical = DISPLAY.get(stack);
++        return chemical == null ? "" : chemical.key();
++    }
++
++    static boolean hasChemical(List<ItemStack> alternatives) {
++        return alternatives.stream().anyMatch(stack -> !key(stack).isEmpty());
++    }
++
++    static Optional<ITypedIngredient<?>> typed(ItemStack stack) {
++        Chemical chemical = DISPLAY.get(stack);
++        return chemical == null ? Optional.empty() : Optional.ofNullable(chemical.typed());
++    }
++
++    static ItemStack patternInput(ItemStack stack, int count) {
++        Chemical chemical = DISPLAY.get(stack);
++        if (chemical != null) return Ae2ChemicalCompat.wrap(chemical.value(), count);
++        ItemStack copy = stack.copy();
++        if (!copy.isEmpty()) copy.setCount(count);
++        return copy;
++    }
++
++    static String formatAmount(long amount) {
++        return amount + " mB";
++    }
++
++    static boolean render(GuiGraphics graphics, ItemStack stack, int x, int y) {
++        var ingredient = typed(stack);
++        var runtime = DirectoryRecipePlugin.getJeiRuntime();
++        if (runtime == null || ingredient.isEmpty()) return false;
++        renderTyped(graphics, runtime.getIngredientManager(), ingredient.get(), x, y);
++        return true;
++    }
++
++    private static <T> void renderTyped(GuiGraphics graphics,
++                                        mezz.jei.api.runtime.IIngredientManager manager,
++                                        ITypedIngredient<T> ingredient, int x, int y) {
++        manager.getIngredientRenderer(ingredient.getType()).render(graphics, ingredient.getIngredient(), x, y);
++    }
++
++    static boolean renderTooltip(GuiGraphics graphics, ItemStack stack, int x, int y) {
++        Chemical chemical = DISPLAY.get(stack);
++        if (chemical == null) return false;
++        Component name;
++        try {
++            name = (Component) chemical.value().getClass().getMethod("getTextComponent").invoke(chemical.value());
++        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
++            name = Component.literal(chemical.key());
++        }
++        var lines = List.of(name, Component.literal(formatAmount(chemical.amount())));
++        graphics.renderTooltip(Minecraft.getInstance().font, lines, Optional.empty(), x, y);
++        return true;
++    }
++}
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/MekanismInfusionItems.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/MekanismInfusionItems.java
+new file mode 100644
+index 0000000..a43c560
+--- /dev/null
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/MekanismInfusionItems.java
+@@ -0,0 +1,73 @@
++package com.lingmu0.JeiPlusPlusMod.client;
++
++import mezz.jei.api.ingredients.ITypedIngredient;
++import net.minecraft.client.Minecraft;
++import net.minecraft.world.item.ItemStack;
++
++import java.lang.reflect.Method;
++import java.util.ArrayList;
++import java.util.List;
++
++/** Optional Mekanism integration; uses the loaded conversion recipes, including datapack changes. */
++final class MekanismInfusionItems {
++    private MekanismInfusionItems() {}
++
++    static List<ItemStack> alternatives(ITypedIngredient<?> ingredient) {
++        if (ingredient == null) return List.of();
++        Object chemical = ingredient.getIngredient();
++        if (chemical == null || !chemical.getClass().getName().equals("mekanism.api.chemical.infuse.InfusionStack")) {
++            return List.of();
++        }
++        var level = Minecraft.getInstance().level;
++        if (level == null) return List.of();
++        try {
++            Object type = call(chemical, "getTypeRegistryName");
++            long needed = ((Number) call(chemical, "getAmount")).longValue();
++            if (type == null || needed <= 0) return List.of();
++            Object registered = Class.forName("mekanism.common.recipe.MekanismRecipeType")
++                .getField("INFUSION_CONVERSION").get(null);
++            Object recipeType = call(registered, "getRecipeType");
++            Object recipes = call(recipeType, "getRecipes", level);
++            if (!(recipes instanceof Iterable<?> all)) return List.of();
++            List<ItemStack> result = new ArrayList<>();
++            for (Object recipe : all) {
++                Object outputs = call(recipe, "getOutputDefinition");
++                if (!(outputs instanceof Iterable<?> values)) continue;
++                for (Object output : values) {
++                    if (!type.equals(call(output, "getTypeRegistryName"))) continue;
++                    long produced = ((Number) call(output, "getAmount")).longValue();
++                    if (produced <= 0) continue;
++                    long batches = 1 + (needed - 1) / produced;
++                    Object input = call(recipe, "getInput");
++                    Object variants = call(input, "getRepresentations");
++                    if (variants instanceof Iterable<?> candidates) {
++                        for (Object value : candidates) {
++                            if (!(value instanceof ItemStack stack) || stack.isEmpty()) continue;
++                            if (batches > Integer.MAX_VALUE / (long) stack.getCount()) continue;
++                            long count = batches * stack.getCount();
++                            ItemStack copy = stack.copy();
++                            copy.setCount((int) count);
++                            result.add(copy);
++                        }
++                    }
++                }
++            }
++            return result;
++        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
++            return List.of();
++        }
++    }
++
++    private static Object call(Object target, String name, Object... args) throws ReflectiveOperationException {
++        if (target == null) return null;
++        for (Method method : target.getClass().getMethods()) {
++            if (!method.getName().equals(name) || method.getParameterCount() != args.length) continue;
++            boolean compatible = true;
++            for (int i = 0; i < args.length; i++) {
++                if (args[i] != null && !method.getParameterTypes()[i].isInstance(args[i])) compatible = false;
++            }
++            if (compatible) return method.invoke(target, args);
++        }
++        throw new NoSuchMethodException(target.getClass().getName() + "." + name);
++    }
++}
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeData.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeData.java
+index 7ae19f7..bce245b 100644
+--- a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeData.java
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeData.java
+@@ -95,11 +95,13 @@ public final class RecipeTreeData {
+     }
+ 
+     public record RecipeSnapshot(
+-            RecipeRef ref,
+-            List<RecipeInput> inputs,
+-            int inputSlotCount,
+-            List<ItemStack> outputs,
+-            List<List<ItemStack>> outputSlots) {
++        RecipeRef ref,
++        List<RecipeInput> inputs,
++        int inputSlotCount,
++        boolean unsupportedInputs,
++        List<ItemStack> outputs,
++        List<List<ItemStack>> outputSlots
++    ) {
+         public List<ItemStack> outputsFor(String wanted) {
+             return RecipeTreeOutputChoices.select(outputSlots, wanted, RecipeTreeData::ingredientKey);
+         }
+@@ -1082,7 +1084,7 @@ public final class RecipeTreeData {
+      * API throws IllegalArgumentException for those values.
+      */
+     public static Optional<IFocus<ItemStack>> createOutputFocus(IJeiRuntime runtime, ItemStack target) {
+-        if (runtime == null || target == null || target.isEmpty()) {
++        if (runtime == null || target == null || target.isEmpty() || !MekanismChemicalIngredient.key(target).isEmpty()) {
+             return Optional.empty();
+         }
+         ItemStack focusStack = target.copy();
+@@ -1118,6 +1120,8 @@ public final class RecipeTreeData {
+         if (stack == null || stack.isEmpty()) {
+             return "minecraft:air";
+         }
++        String chemicalKey = MekanismChemicalIngredient.key(stack);
++        if (!chemicalKey.isEmpty()) return chemicalKey;
+         Optional<String> fluidKey = FluidRecipeCompat.fluidKey(stack);
+         if (fluidKey.isPresent()) {
+             return fluidKey.get();
+@@ -1178,6 +1182,7 @@ public final class RecipeTreeData {
+         Map<String, ItemStack> outputs = new LinkedHashMap<>();
+         List<List<ItemStack>> outputSlots = new ArrayList<>();
+         int inputSlotCount = 0;
++        boolean unsupportedInputs = false;
+         for (IRecipeSlotView slot : layout.getRecipeSlotsView().getSlotViews()) {
+             RecipeIngredientRole role = slot.getRole();
+             // JEI catalysts are machines/tools and are not consumed materials.
+@@ -1187,6 +1192,9 @@ public final class RecipeTreeData {
+             int inputSlotIndex = role == RecipeIngredientRole.INPUT ? inputSlotCount++ : -1;
+             List<ItemStack> alternatives = displayedStacks(slot, role == RecipeIngredientRole.INPUT);
+             if (alternatives.isEmpty()) {
++                if (role == RecipeIngredientRole.INPUT && slot.getAllIngredients().findAny().isPresent()) {
++                    unsupportedInputs = true;
++                }
+                 continue;
+             }
+             if (role == RecipeIngredientRole.INPUT) {
+@@ -1203,14 +1211,14 @@ public final class RecipeTreeData {
+             for (List<ITypedIngredient<?>> ingredients : SequencedAssemblyCompat.repeatedInputSlots(
+                     ref.recipe(), runtime.getIngredientManager())) {
+                 List<ItemStack> alternatives = displayedStacks(ingredients, true);
++                if (alternatives.isEmpty() && !ingredients.isEmpty()) unsupportedInputs = true;
+                 addRecipeInput(groupedInputs, alternatives, inputSlotCount++);
+             }
+         }
+         List<RecipeInput> inputs = groupedInputs.values().stream()
+-                .map(MutableRecipeInput::freeze)
+-                .toList();
+-        RecipeSnapshot snapshot = new RecipeSnapshot(ref, inputs, inputSlotCount, List.copyOf(outputs.values()),
+-                List.copyOf(outputSlots));
++            .map(MutableRecipeInput::freeze)
++            .toList();
++        RecipeSnapshot snapshot = new RecipeSnapshot(ref, inputs, inputSlotCount, unsupportedInputs, List.copyOf(outputs.values()), List.copyOf(outputSlots));
+         RECIPE_SNAPSHOT_CACHE.put(ref, snapshot);
+         return snapshot;
+     }
+@@ -1267,7 +1275,12 @@ public final class RecipeTreeData {
+                     .ifPresent(stack -> unique.putIfAbsent(ingredientKey(stack), stack));
+             if (input) {
+                 FluidRecipeCompat.containerCandidate(ingredient)
+-                        .ifPresent(stack -> unique.putIfAbsent(ingredientKey(stack), stack));
++                    .ifPresent(stack -> unique.putIfAbsent(ingredientKey(stack), stack));
++                for (ItemStack stack : MekanismInfusionItems.alternatives(ingredient)) {
++                    unique.putIfAbsent(ingredientKey(stack), stack);
++                }
++                MekanismChemicalIngredient.fromIngredient(ingredient)
++                    .ifPresent(stack -> unique.putIfAbsent(ingredientKey(stack), stack));
+             }
+         }
+         if (input && unique.isEmpty()) {
+@@ -1294,7 +1307,9 @@ public final class RecipeTreeData {
+      * (usually oak) entry as the accidental default.
+      */
+     static List<ItemStack> candidateStacks(IRecipeSlotView slot) {
+-        return slot == null ? List.of() : displayedStacks(slot, true);
++        return slot == null ? List.of() : displayedStacks(slot, true).stream()
++            .filter(stack -> MekanismChemicalIngredient.key(stack).isEmpty())
++            .toList();
+     }
+ 
+     private static final class MutableRecipeInput {
+@@ -1361,7 +1376,7 @@ public final class RecipeTreeData {
+         var menu = player.containerMenu;
+         if (menu != null && menu != player.inventoryMenu) {
+             for (var slot : menu.slots) {
+-                if (slot.container == inventory) {
++                if (slot.container == inventory || StorageNetworkIntegration.isVirtualOrResultSlot(slot)) {
+                     continue;
+                 }
+                 ItemStack stack = slot.getItem();
+@@ -1725,9 +1740,10 @@ public final class RecipeTreeData {
+         }
+         String key = ingredientKey(stack);
+         setAvailable(available, key, safeAdd(
+-                availableAmount(available, key),
+-                mapAmount(stack, amount)));
+-        if (FluidRecipeCompat.fluidKey(stack).isEmpty()) {
++            availableAmount(available, key),
++            mapAmount(stack, amount)
++        ));
++        if (MekanismChemicalIngredient.key(stack).isEmpty() && FluidRecipeCompat.fluidKey(stack).isEmpty()) {
+             FluidRecipeCompat.fluidRepresentation(stack).ifPresent(fluid -> {
+                 String fluidKey = ingredientKey(fluid);
+                 setAvailable(available, fluidKey, safeAdd(
+@@ -1785,8 +1801,10 @@ public final class RecipeTreeData {
+         // A filled container can satisfy a fluid ingredient as well as an
+         // explicit bucket ingredient. Keep both keys in the planning map so
+         // fluid candidates recurse through inventory/network containers.
+-        if (FluidRecipeCompat.fluidKey(stack).isEmpty()) {
+-            FluidRecipeCompat.fluidRepresentation(stack).ifPresent(fluid -> add(map, fluid, mapAmount(fluid, units)));
++        if (MekanismChemicalIngredient.key(stack).isEmpty() && FluidRecipeCompat.fluidKey(stack).isEmpty()) {
++            FluidRecipeCompat.fluidRepresentation(stack).ifPresent(fluid ->
++                add(map, fluid, mapAmount(fluid, units))
++            );
+         }
+     }
+ 
+@@ -1808,7 +1826,9 @@ public final class RecipeTreeData {
+         if (node == null || amount <= 0) {
+             return;
+         }
+-        List<ItemStack> alternatives = node.explicitChoice ? List.of(node.stack) : node.alternatives;
++        List<ItemStack> alternatives = node.explicitChoice || MekanismChemicalIngredient.hasChemical(node.alternatives)
++            ? List.of(node.stack)
++            : node.alternatives;
+         String key = alternatives.stream()
+                 .map(RecipeTreeData::ingredientKey)
+                 .distinct()
+@@ -1834,7 +1854,7 @@ public final class RecipeTreeData {
+             return remainingAmount <= 0 ? 0 : ceilDiv(remainingAmount, perUnit);
+         }
+         long remaining = consume(map, node.ingredientKey, desired);
+-        if (!node.explicitChoice && remaining > 0) {
++        if (!node.explicitChoice && !MekanismChemicalIngredient.hasChemical(node.alternatives) && remaining > 0) {
+             for (ItemStack alternative : node.alternatives) {
+                 String key = ingredientKey(alternative);
+                 if (!key.equals(node.ingredientKey)) {
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeFavorites.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeFavorites.java
+index da6f0ae..f783571 100644
+--- a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeFavorites.java
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeFavorites.java
+@@ -15,7 +15,6 @@ import mezz.jei.api.runtime.IJeiRuntime;
+ import mezz.jei.api.runtime.IRecipesGui;
+ import mezz.jei.common.gui.JeiTooltip;
+ import mezz.jei.common.Internal;
+-import mezz.jei.common.platform.Services;
+ import mezz.jei.gui.bookmarks.BookmarkList;
+ import mezz.jei.gui.bookmarks.IBookmark;
+ import mezz.jei.gui.overlay.elements.IElement;
+@@ -678,9 +677,10 @@ public final class RecipeTreeFavorites {
+         private IDrawable createRenderOverlay() {
+             long remaining = remainingDisplayAmount();
+             int color = step == null
+-                    ? (remaining == 0 ? 0xFF55FF55 : 0xFFFF5555)
+-                    : (remaining == 0 ? 0xFF55FF55 : (intermediate ? 0xFFFFAA33 : 0xFF55CCFF));
+-            return new AmountOverlay(remainingText(remaining), color);
++                ? (remaining == 0 ? 0xFF55FF55 : 0xFFFF5555)
++                : (remaining == 0 ? 0xFF55FF55 : (intermediate ? 0xFFFFAA33 : 0xFF55CCFF));
++            return new AmountOverlay(remainingText(remaining), color,
++                step == null ? null : categoryIcon(step.recipe().category()));
+         }
+ 
+         @SuppressWarnings({"rawtypes", "unchecked"})
+@@ -762,26 +762,13 @@ public final class RecipeTreeFavorites {
+             invokeIngredientTooltipHelper(tooltipHelper, tooltip, ingredientRenderer, ingredientHelper);
+             if (FluidRecipeCompat.fluid(typed).isPresent()) {
+                 FluidRecipeCompat.fluid(typed).ifPresent(value -> tooltip.add(
+-                        Component.translatable(
+-                                "jei_plus_plus.recipe_tree.favorite.fluid_amount",
+-                                FluidRecipeCompat.formatAmount(value.getAmount())).withStyle(ChatFormatting.GRAY)));
+-            } else {
+-                @SuppressWarnings("unchecked")
+-                IIngredientHelper<ItemStack> itemHelper = (IIngredientHelper<ItemStack>) ingredientHelper;
+-                @SuppressWarnings("unchecked")
+-                IIngredientRenderer<ItemStack> itemRenderer = (IIngredientRenderer<ItemStack>) ingredientRenderer;
+-                List<ItemStack> alternatives = tooltipAlternatives();
+-                if (alternatives.size() > 1) {
+-                    itemHelper.getTagKeyEquivalent(alternatives).ifPresent(tagKey -> {
+-                        tooltip.add(Component.translatable("jei.tooltip.recipe.tag", "")
+-                                .withStyle(ChatFormatting.GRAY));
+-                        tooltip.add(Services.PLATFORM.getRenderHelper().getName(tagKey)
+-                                .copy().withStyle(ChatFormatting.GRAY));
+-                    });
+-                    JeiTooltipCompat.createTagContent(
+-                            DirectoryRecipePlugin.getJeiRuntime(), itemRenderer, alternatives).ifPresent(tooltip::add);
+-                }
++                    Component.translatable(
++                        "jei_plus_plus.recipe_tree.favorite.fluid_amount",
++                        FluidRecipeCompat.formatAmount(value.getAmount())
++                    ).withStyle(ChatFormatting.GRAY)
++                ));
+             }
++            JeiTooltipCompat.addAlternatives(tooltip, DirectoryRecipePlugin.getJeiRuntime(), tooltipAlternatives());
+             long owned = owned();
+             long total = total();
+             ItemStack source = sourceStack();
+@@ -869,21 +856,16 @@ public final class RecipeTreeFavorites {
+         }
+ 
+         private List<ItemStack> tooltipAlternatives() {
+-            List<ItemStack> source = step == null
+-                    ? (cost == null ? List.of() : cost.alternatives())
+-                    : step.alternatives();
+-            return source.stream()
+-                    .filter(stack -> stack != null && !stack.isEmpty())
+-                    .map(stack -> {
+-                        ItemStack copy = stack.copy();
+-                        copy.setCount(1);
+-                        return copy;
+-                    })
+-                    .toList();
++            return step == null
++                ? (cost == null ? List.of() : cost.alternatives())
++                : step.alternatives();
+         }
+ 
+         private String quantityText(long units) {
+             ItemStack source = sourceStack();
++            if (!MekanismChemicalIngredient.key(source).isEmpty()) {
++                return MekanismChemicalIngredient.formatAmount(units);
++            }
+             if (!source.isEmpty() && FluidRecipeCompat.treeFluid(source).isPresent()) {
+                 return FluidRecipeCompat.formatAmount(FluidRecipeCompat.amountForUnits(source, units));
+             }
+@@ -923,15 +905,28 @@ public final class RecipeTreeFavorites {
+ 
+     }
+ 
+-    private record AmountOverlay(String value, int color) implements IDrawable {
+-        @Override
+-        public int getWidth() {
+-            return 16;
+-        }
+-        @Override
+-        public int getHeight() {
+-            return 16;
++    private static final java.util.Map<IRecipeCategory<?>, IDrawable> CATEGORY_ICONS = new java.util.WeakHashMap<>();
++
++    private static IDrawable categoryIcon(IRecipeCategory<?> category) {
++        IDrawable icon = category.getIcon();
++        if (icon != null) return icon;
++        icon = CATEGORY_ICONS.get(category);
++        if (icon != null) return icon;
++        IJeiRuntime runtime = DirectoryRecipePlugin.getJeiRuntime();
++        if (runtime == null) return null;
++        try {
++            icon = runtime.getRecipeManager().createRecipeCatalystLookup(category.getRecipeType()).get()
++                .findFirst().map(runtime.getJeiHelpers().getGuiHelper()::createDrawableIngredient).orElse(null);
++            if (icon != null) CATEGORY_ICONS.put(category, icon);
++        } catch (RuntimeException | LinkageError ignored) {
++            return null;
+         }
++        return icon;
++    }
++
++    private record AmountOverlay(String value, int color, IDrawable categoryIcon) implements IDrawable {
++        @Override public int getWidth() { return 16; }
++        @Override public int getHeight() { return 16; }
+ 
+         @Override
+         public void draw(GuiGraphics graphics, int xOffset, int yOffset) {
+@@ -939,12 +934,41 @@ public final class RecipeTreeFavorites {
+             int textWidth = Math.max(1, font.width(value));
+             float scale = Math.min(1.0f, 16.0f / textWidth);
+             graphics.pose().pushPose();
++            if (categoryIcon != null && categoryIcon.getWidth() > 0 && categoryIcon.getHeight() > 0) {
++                graphics.pose().pushPose();
++                // Match the depth and Z scale of JEI's native recipe bookmark icon.
++                graphics.pose().translate(xOffset + 8, yOffset + 8, 200);
++                float iconScale = Math.min(8.0f / categoryIcon.getWidth(), 8.0f / categoryIcon.getHeight());
++                graphics.pose().scale(iconScale, iconScale, 0.5f);
++                categoryIcon.draw(graphics, 0, 0);
++                graphics.pose().popPose();
++            }
+             graphics.pose().translate(0, 0, 300);
+             graphics.fill(xOffset, yOffset, xOffset + 2, yOffset + 2, color);
+-            graphics.pose().translate(xOffset + 17, yOffset + 9, 0);
++            graphics.pose().translate(xOffset + 17, yOffset + (categoryIcon == null ? 9 : 0), 0);
+             graphics.pose().scale(scale, scale, 1.0f);
+             graphics.drawString(font, value, -textWidth, 0, color, true);
+             graphics.pose().popPose();
+         }
+     }
++
++    /** Draw a recipe tree marker in the slot's current render coordinates. */
++    public static void renderSlotHighlight(GuiGraphics graphics, Slot slot) {
++        if (slot.getItem().isEmpty()) return;
++        boolean finalProduct = isFinalProduct(slot.getItem());
++        boolean intermediate = isIntermediate(slot.getItem());
++        boolean required = isRequired(slot.getItem());
++        if (!finalProduct && !intermediate && !required) return;
++
++        int fill = finalProduct ? 0x4433CC66 : (intermediate ? 0x44FF2222 : 0x3300BBFF);
++        int border = finalProduct ? 0xDD66FF88 : (intermediate ? 0xDDFF5555 : 0xCC55DDFF);
++        graphics.pose().pushPose();
++        graphics.pose().translate(0, 0, 300);
++        graphics.fill(slot.x, slot.y, slot.x + 16, slot.y + 16, fill);
++        graphics.fill(slot.x, slot.y, slot.x + 16, slot.y + 1, border);
++        graphics.fill(slot.x, slot.y + 15, slot.x + 16, slot.y + 16, border);
++        graphics.fill(slot.x, slot.y, slot.x + 1, slot.y + 16, border);
++        graphics.fill(slot.x + 15, slot.y, slot.x + 16, slot.y + 16, border);
++        graphics.pose().popPose();
++    }
+ }
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeScreen.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeScreen.java
+index 6cc87da..b7ba67f 100644
+--- a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeScreen.java
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeScreen.java
+@@ -1,18 +1,11 @@
+ package com.lingmu0.JeiPlusPlusMod.client;
+ 
+ import com.lingmu0.JeiPlusPlusMod.JeiPlusPlusConfig;
+-import mezz.jei.api.constants.VanillaTypes;
+ import mezz.jei.api.gui.IRecipeLayoutDrawable;
+ import mezz.jei.api.gui.drawable.IDrawable;
+-import mezz.jei.api.ingredients.IIngredientHelper;
+-import mezz.jei.api.ingredients.IIngredientRenderer;
+-import mezz.jei.api.ingredients.ITypedIngredient;
+ import mezz.jei.api.recipe.IFocus;
+ import mezz.jei.api.runtime.IJeiRuntime;
+ import mezz.jei.common.gui.JeiTooltip;
+-import mezz.jei.common.platform.Services;
+-import mezz.jei.common.util.SafeIngredientUtil;
+-import net.minecraft.ChatFormatting;
+ import net.minecraft.client.Minecraft;
+ import net.minecraft.client.gui.GuiGraphics;
+ import net.minecraft.client.gui.screens.Screen;
+@@ -20,8 +13,6 @@ import net.minecraft.network.chat.Component;
+ import net.minecraft.world.item.ItemStack;
+ 
+ import java.util.ArrayList;
+-import java.lang.reflect.InvocationTargetException;
+-import java.lang.reflect.Method;
+ import java.util.List;
+ import java.util.Locale;
+ import java.util.Optional;
+@@ -633,70 +624,26 @@ public final class RecipeTreeScreen extends Screen {
+             return;
+         }
+ 
+-        List<ItemStack> alternatives = node.alternatives().stream()
+-                .map(stack -> {
+-                    ItemStack copy = FluidRecipeCompat.copyWithDisplay(stack);
+-                    copy.setCount(1);
+-                    return copy;
+-                })
+-                .toList();
+         ItemStack displayed = FluidRecipeCompat.copyWithDisplay(node.stack());
+         displayed.setCount(1);
+-        if (FluidRecipeCompat.renderTooltip(graphics, displayed, mouseX, mouseY)) {
+-            return;
+-        }
+-        var typed = runtime.getIngredientManager()
+-                .createTypedIngredient(VanillaTypes.ITEM_STACK, displayed);
++        var manager = runtime.getIngredientManager();
++        var typed = FluidRecipeCompat.toTyped(manager, displayed);
+         if (typed.isEmpty()) {
+-            graphics.renderTooltip(font, displayed, mouseX, mouseY);
++            if (!FluidRecipeCompat.renderTooltip(graphics, displayed, mouseX, mouseY)) {
++                graphics.renderTooltip(font, displayed, mouseX, mouseY);
++            }
+             return;
+         }
+ 
+-        IIngredientRenderer<ItemStack> renderer = runtime.getIngredientManager()
+-                .getIngredientRenderer(VanillaTypes.ITEM_STACK);
+-        IIngredientHelper<ItemStack> helper = runtime.getIngredientManager()
+-                .getIngredientHelper(VanillaTypes.ITEM_STACK);
+         JeiTooltip tooltip = new JeiTooltip();
+-        addSafeIngredientTooltip(tooltip, runtime, renderer, typed.get());
+-        helper.getTagKeyEquivalent(alternatives).ifPresent(tagKey -> {
+-            tooltip.add(Component.translatable("jei.tooltip.recipe.tag", "")
+-                    .withStyle(ChatFormatting.GRAY));
+-            tooltip.add(Services.PLATFORM.getRenderHelper().getName(tagKey)
+-                    .copy().withStyle(ChatFormatting.GRAY));
+-        });
+-        if (alternatives.size() > 1) {
+-            JeiTooltipCompat.createTagContent(runtime, renderer, alternatives)
+-                    .ifPresent(tooltip::add);
+-        }
++        JeiTooltipCompat.addIngredientTooltip(tooltip, manager, typed.get());
++        JeiTooltipCompat.addAlternatives(tooltip, runtime, node.alternatives());
+         graphics.pose().pushPose();
+         graphics.pose().translate(0, 0, 700);
+         tooltip.draw(graphics, mouseX, mouseY);
+         graphics.pose().popPose();
+     }
+ 
+-    /** JEI 15.48 renamed getTooltip to getRichTooltip without changing its arguments. */
+-    private static void addSafeIngredientTooltip(
+-            JeiTooltip tooltip,
+-            IJeiRuntime runtime,
+-            IIngredientRenderer<ItemStack> renderer,
+-            ITypedIngredient<ItemStack> typed) {
+-        for (String name : List.of("getRichTooltip", "getTooltip")) {
+-            for (Method method : SafeIngredientUtil.class.getMethods()) {
+-                if (!method.getName().equals(name) || method.getParameterCount() != 4) {
+-                    continue;
+-                }
+-                try {
+-                    method.invoke(null, tooltip, runtime.getIngredientManager(), renderer, typed);
+-                    return;
+-                } catch (IllegalAccessException ignored) {
+-                    // Try the other stable method name below.
+-                } catch (InvocationTargetException exception) {
+-                    return;
+-                }
+-            }
+-        }
+-    }
+-
+     private RecipeTreeData.Node hoveredNode(double mouseX, double mouseY) {
+         int[] point = treeMouse(mouseX, mouseY);
+         for (RecipeTreeData.Node node : visibleNodes) {
+@@ -1160,20 +1107,23 @@ public final class RecipeTreeScreen extends Screen {
+             return supplied
+                     + "/" + quantityText(cost.stack(), cost.required(), fluid);
+         }
+-        return !fluid && cost.required() == 1
+-                ? ""
+-                : quantityText(cost.stack(), cost.required(), fluid);
++        return !fluid && MekanismChemicalIngredient.key(cost.stack()).isEmpty() && cost.required() == 1
++            ? ""
++            : quantityText(cost.stack(), cost.required(), fluid);
+     }
+ 
+     private static String formatNodeAmount(ItemStack stack, long amount) {
+         boolean fluid = FluidRecipeCompat.treeFluid(stack).isPresent();
+-        if (!fluid && amount == 1) {
++        if (!fluid && MekanismChemicalIngredient.key(stack).isEmpty() && amount == 1) {
+             return "";
+         }
+         return quantityText(stack, amount, fluid);
+     }
+ 
+     private static String quantityText(ItemStack stack, long units, boolean fluid) {
++        if (!MekanismChemicalIngredient.key(stack).isEmpty()) {
++            return MekanismChemicalIngredient.formatAmount(units);
++        }
+         if (fluid) {
+             return FluidRecipeCompat.formatAmount(FluidRecipeCompat.amountForUnits(stack, units));
+         }
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeTransfer.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeTransfer.java
+index 77b7ff9..e6df3b1 100644
+--- a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeTransfer.java
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/RecipeTreeTransfer.java
+@@ -2,6 +2,7 @@ package com.lingmu0.JeiPlusPlusMod.client;
+ 
+ import com.lingmu0.JeiPlusPlusMod.mixin.BasicRecipeTransferHandlerAccessor;
+ import mezz.jei.api.constants.VanillaTypes;
++import mezz.jei.api.constants.RecipeTypes;
+ import mezz.jei.api.gui.IRecipeLayoutDrawable;
+ import mezz.jei.api.gui.ingredient.IRecipeSlotView;
+ import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
+@@ -71,6 +72,8 @@ public final class RecipeTreeTransfer {
+     private static ItemStack pendingAe2OutputStack = ItemStack.EMPTY;
+     private static long pendingAe2InventoryBefore;
+     private static boolean pendingVanillaPickup;
++    private static SophisticatedCrafting.Grid pausedCraftingRefill;
++    private static SophisticatedCrafting.Sync sophisticatedSync;
+     private static int pendingPickupAttempts;
+     private static int waitFrames;
+     private static int emptyFrames;
+@@ -82,6 +85,25 @@ public final class RecipeTreeTransfer {
+         clearPending();
+     }
+ 
++    public static void beforeContainerClose(AbstractContainerMenu menu) {
++        if ((pausedCraftingRefill != null && pausedCraftingRefill.menu() == menu)
++            || (sophisticatedSync != null && sophisticatedSync.grid().menu() == menu)) {
++            clearPending();
++        }
++    }
++
++    public static void updateSophisticatedSlot(int containerId, int slot, ItemStack stack) {
++        if (sophisticatedSync != null && sophisticatedSync.grid().menu().containerId == containerId) {
++            sophisticatedSync.updateSlot(slot, stack);
++        }
++    }
++
++    public static void updateSophisticatedContents(int containerId) {
++        if (sophisticatedSync != null && sophisticatedSync.grid().menu().containerId == containerId) {
++            sophisticatedSync.updateAll();
++        }
++    }
++
+     public static boolean canTransfer(RecipeTreeData.CraftStep step, boolean recursive) {
+         RecipeTreeData.CraftStep first = firstStep(step, recursive);
+         if (first == null) {
+@@ -149,6 +171,11 @@ public final class RecipeTreeTransfer {
+             return;
+         }
+ 
++        if (sophisticatedSync != null) {
++            tickSophisticatedCraft(screen.getMenu(), minecraft);
++            return;
++        }
++
+         if (pendingAe2Carry) {
+             tickAe2Carry(screen, minecraft);
+             return;
+@@ -556,6 +583,10 @@ public final class RecipeTreeTransfer {
+         PendingCraft craft = pendingCrafts.get(pendingCraftIndex);
+         AbstractContainerMenu menu = screen.getMenu();
+         Minecraft minecraft = Minecraft.getInstance();
++        SophisticatedCrafting.Grid grid = sophisticatedGrid(menu, craft.step);
++        if (grid != null) {
++            return startSophisticatedCraft(grid, craft, minecraft);
++        }
+         int resultSlot = instantResultSlot(menu);
+         boolean genericResult = resultSlot < 0
+                 && hasGenericResultSlot(menu, minecraft.player);
+@@ -596,6 +627,85 @@ public final class RecipeTreeTransfer {
+         return true;
+     }
+ 
++    private static SophisticatedCrafting.Grid sophisticatedGrid(AbstractContainerMenu menu, RecipeTreeData.CraftStep step) {
++        return RecipeTypes.CRAFTING.equals(step.recipe().category().getRecipeType())
++            ? SophisticatedCrafting.openGrid(menu) : null;
++    }
++
++    private static SophisticatedCrafting.Plan sophisticatedPlan(
++        SophisticatedCrafting.Grid grid, IRecipeLayoutDrawable<?> layout, List<String> selectedInputs,
++        int batches, boolean recursiveCandidates, Player player
++    ) {
++        List<ItemStack> templates = new ArrayList<>();
++        for (IRecipeSlotView slot : layout.getRecipeSlotsView().getSlotViews(RecipeIngredientRole.INPUT)) {
++            int index = templates.size();
++            String key = index < selectedInputs.size() ? selectedInputs.get(index) : "";
++            ItemStack ingredient = selectedInput(slot, key, recursiveCandidates).orElse(ItemStack.EMPTY);
++            if (ingredient.isEmpty() && !slot.isEmpty()) return null;
++            templates.add(ingredient);
++        }
++        return SophisticatedCrafting.plan(grid, templates, batches, player);
++    }
++
++    private static boolean startSophisticatedCraft(
++        SophisticatedCrafting.Grid grid, PendingCraft craft, Minecraft minecraft
++    ) {
++        if (pausedCraftingRefill != null && pausedCraftingRefill.upgrade() != grid.upgrade()) {
++            clearPending();
++            return false;
++        }
++        IRecipeLayoutDrawable<?> layout = RecipeTreeData.createLayout(craft.step.recipe()).orElse(null);
++        int batches = (int) Math.min(Integer.MAX_VALUE, craft.remainingBatches);
++        SophisticatedCrafting.Plan plan = layout == null || minecraft.player == null ? null
++            : sophisticatedPlan(grid, layout, craft.step.selectedInputs(), batches, true, minecraft.player);
++        if (plan == null) {
++            clearPending();
++            return false;
++        }
++        if (grid.isRefillEnabled()) {
++            if (!grid.setRefill(false)) {
++                clearPending();
++                return false;
++            }
++            pausedCraftingRefill = grid;
++        }
++        sophisticatedSync = new SophisticatedCrafting.Sync(grid);
++        sophisticatedSync.expectInputs(plan.expected());
++        if (!plan.fill(minecraft.player)) {
++            clearPending();
++            return false;
++        }
++        pendingMenuId = grid.menu().containerId;
++        pendingLoadedBatches = plan.batches();
++        pendingVanillaPickup = false;
++        return true;
++    }
++
++    private static void tickSophisticatedCraft(AbstractContainerMenu menu, Minecraft minecraft) {
++        SophisticatedCrafting.Sync sync = sophisticatedSync;
++        SophisticatedCrafting.Grid grid = sync.grid();
++        if (menu != grid.menu() || !grid.isOpen() || sync.timedOut()) {
++            clearPending();
++            return;
++        }
++        if (pendingVanillaPickup) {
++            // Client prediction can consume the result before the server applies the click.
++            if (sync.pickupConfirmed()) {
++                sophisticatedSync = null;
++                pendingChunk = pendingLoadedBatches;
++                completePendingCraft();
++            }
++            return;
++        }
++        RecipeTreeData.CraftStep step = pendingCrafts.get(pendingCraftIndex).step;
++        if (!sync.inputsReady() || !isExpectedCraftOutput(step, sync.result())
++            || !ItemStack.matches(sync.result(), grid.result().getItem()) || !menu.getCarried().isEmpty()) return;
++
++        sync.awaitPickup();
++        pendingVanillaPickup = true;
++        minecraft.gameMode.handleInventoryMouseClick(menu.containerId, grid.result().index, 0, ClickType.QUICK_MOVE, minecraft.player);
++    }
++
+     /**
+      * Finds an already populated output-like slot in a custom menu. The
+      * non-placeable-slot check is the common contract used by vanilla result
+@@ -791,7 +901,14 @@ public final class RecipeTreeTransfer {
+             return false;
+         }
+         AbstractContainerMenu menu = screen.getMenu();
+-        // Prefer JEI's normal container-transfer handler. It is the safest
++        SophisticatedCrafting.Grid grid = sophisticatedGrid(menu, step);
++        if (grid != null && !maxTransfer) {
++            SophisticatedCrafting.Plan plan = sophisticatedPlan(
++                grid, layout, step.selectedInputs(), batches, recursiveCandidates, player
++            );
++            return plan != null && (!doTransfer || plan.fill(player));
++        }
++        // Prefer JEI's normal container-transfer handler.  It is the safest
+         // path for ordinary menus and for network mods that already expose a
+         // JEI handler. The reflective network packet is only the fallback
+         // for a fake-slot terminal where no generic handler can move items.
+@@ -1325,6 +1442,13 @@ public final class RecipeTreeTransfer {
+     }
+ 
+     private static void clearPending() {
++        SophisticatedCrafting.Grid paused = pausedCraftingRefill;
++        pausedCraftingRefill = null;
++        sophisticatedSync = null;
++        if (paused != null) {
++            var player = Minecraft.getInstance().player;
++            if (player != null && player.containerMenu == paused.menu()) paused.setRefill(true);
++        }
+         pendingCrafts = List.of();
+         pendingCraftIndex = 0;
+         pendingMenuId = -1;
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/SophisticatedCrafting.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/SophisticatedCrafting.java
+new file mode 100644
+index 0000000..7e45c91
+--- /dev/null
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/SophisticatedCrafting.java
+@@ -0,0 +1,236 @@
++package com.lingmu0.JeiPlusPlusMod.client;
++
++import net.minecraft.client.Minecraft;
++import net.minecraft.world.entity.player.Player;
++import net.minecraft.world.inventory.AbstractContainerMenu;
++import net.minecraft.world.inventory.ClickType;
++import net.minecraft.world.inventory.ResultSlot;
++import net.minecraft.world.inventory.Slot;
++import net.minecraft.world.item.ItemStack;
++
++import java.lang.reflect.Method;
++import java.util.ArrayList;
++import java.util.HashMap;
++import java.util.IdentityHashMap;
++import java.util.List;
++import java.util.Map;
++
++/** Optional client integration shared by Sophisticated Storage and Backpacks. */
++final class SophisticatedCrafting {
++    private static final String CORE = "net.p3pp3rf1y.sophisticatedcore.";
++    private static final String MENU = CORE + "common.gui.StorageContainerMenuBase";
++    private static final String UPGRADE = CORE + "upgrades.crafting.CraftingUpgradeContainer";
++
++    private static final ClassValue<Boolean> STORAGE_MENU = new ClassValue<>() {
++        @Override
++        protected Boolean computeValue(Class<?> type) {
++            return isType(type, MENU);
++        }
++    };
++
++    private SophisticatedCrafting() {}
++
++    static Grid openGrid(AbstractContainerMenu menu) {
++        if (!STORAGE_MENU.get(menu.getClass())) return null;
++        if (!(JeiReflectionCompat.tryInvoke(menu, "getUpgradeContainers") instanceof Map<?, ?> upgrades)) return null;
++        for (Object upgrade : upgrades.values()) {
++            if (!isType(upgrade.getClass(), UPGRADE) || !Boolean.TRUE.equals(JeiReflectionCompat.tryInvoke(upgrade, "isOpen"))) continue;
++            if (!(JeiReflectionCompat.tryInvoke(upgrade, "getRecipeSlots") instanceof List<?> inputs)
++                || !(JeiReflectionCompat.tryInvoke(upgrade, "getSlots") instanceof List<?> slots)
++                || !inputs.stream().allMatch(Slot.class::isInstance)) continue;
++
++            for (Object slot : slots) {
++                if (slot instanceof ResultSlot result && result.index >= 0 && menu.getSlot(result.index) == result) {
++                    return new Grid(menu, upgrade, inputs.stream().map(Slot.class::cast).toList(), result);
++                }
++            }
++        }
++        return null;
++    }
++
++    private static boolean isType(Class<?> type, String name) {
++        for (; type != null; type = type.getSuperclass()) {
++            if (type.getName().equals(name)) return true;
++        }
++        return false;
++    }
++
++    record Grid(AbstractContainerMenu menu, Object upgrade, List<Slot> inputs, ResultSlot result) {
++        boolean isOpen() {
++            return Boolean.TRUE.equals(JeiReflectionCompat.tryInvoke(upgrade, "isOpen"))
++                && menu.getSlot(result.index) == result;
++        }
++
++        boolean isRefillEnabled() {
++            return Boolean.TRUE.equals(JeiReflectionCompat.tryInvoke(upgrade, "shouldRefillCraftingGrid"));
++        }
++
++        boolean setRefill(boolean enabled) {
++            try {
++                upgrade.getClass().getMethod("setRefillCraftingGrid", boolean.class).invoke(upgrade, enabled);
++                return true;
++            } catch (ReflectiveOperationException ignored) {
++                return false; // Older SophisticatedCore releases have no refill setting.
++            }
++        }
++
++        List<Slot> inventorySlots(Player player) {
++            List<Slot> slots = new ArrayList<>();
++            try {
++                Method isStorageSlot = menu.getClass().getMethod("isStorageInventorySlot", int.class);
++                for (Slot slot : menu.slots) {
++                    if (!slot.isActive() || !slot.mayPickup(player)) continue;
++                    boolean playerSlot = slot.container == player.getInventory()
++                        && slot.getContainerSlot() >= 0 && slot.getContainerSlot() < 36;
++                    if (playerSlot || Boolean.TRUE.equals(isStorageSlot.invoke(menu, slot.index))) slots.add(slot);
++                }
++            } catch (ReflectiveOperationException ignored) {
++                return List.of();
++            }
++            return slots;
++        }
++    }
++
++    /** The grid and result as confirmed by server slot packets, independent of click prediction. */
++    static final class Sync {
++        private final Grid grid;
++        private final Map<Slot, ItemStack> stacks = new IdentityHashMap<>();
++        private List<ItemStack> expectedInputs = List.of();
++        private boolean resultUpdated;
++        private long waitingSince = System.nanoTime();
++
++        Sync(Grid grid) {
++            this.grid = grid;
++            updateAll();
++        }
++
++        void expectInputs(List<ItemStack> expected) {
++            expectedInputs = expected;
++        }
++
++        Grid grid() { return grid; }
++
++        boolean timedOut() { return System.nanoTime() - waitingSince > 10_000_000_000L; }
++
++        void updateSlot(int index, ItemStack stack) {
++            if (index == grid.result.index) {
++                resultUpdated = true;
++                stacks.put(grid.result, stack.copy());
++            }
++            for (Slot slot : grid.inputs) {
++                if (slot.index == index) {
++                    stacks.put(slot, stack.copy());
++                    return;
++                }
++            }
++        }
++
++        void updateAll() {
++            for (Slot slot : grid.inputs) stacks.put(slot, slot.getItem().copy());
++            updateSlot(grid.result.index, grid.result.getItem());
++        }
++
++        boolean inputsReady() {
++            for (int i = 0; i < expectedInputs.size(); i++) {
++                if (!ItemStack.matches(expectedInputs.get(i), stacks.get(grid.inputs.get(i)))) return false;
++            }
++            return !expectedInputs.isEmpty();
++        }
++
++        ItemStack result() {
++            return stacks.get(grid.result);
++        }
++
++        void awaitPickup() {
++            resultUpdated = false;
++            waitingSince = System.nanoTime();
++        }
++
++        boolean pickupConfirmed() {
++            return resultUpdated && result().isEmpty() && !inputsReady();
++        }
++    }
++
++    static Plan plan(Grid grid, List<ItemStack> templates, int batches, Player player) {
++        if (templates.isEmpty() || templates.size() > grid.inputs.size() || !grid.menu.getCarried().isEmpty()) return null;
++        for (int i = 0; i < templates.size(); i++) {
++            ItemStack stack = templates.get(i);
++            if (stack.isEmpty()) continue;
++            Slot slot = grid.inputs.get(i);
++            if (!slot.mayPlace(stack)) return null;
++            batches = Math.min(batches, slot.getMaxStackSize(stack) / stack.getCount());
++        }
++        if (batches <= 0) return null;
++
++        List<ItemStack> expected = new ArrayList<>(grid.inputs.size());
++        List<Slot> inventory = grid.inventorySlots(player);
++        Map<String, Long> supply = new HashMap<>();
++        for (Slot slot : inventory) addSupply(supply, slot);
++        for (Slot slot : grid.inputs) {
++            if (slot.mayPickup(player)) addSupply(supply, slot);
++        }
++        boolean hasIngredients = false;
++        for (int i = 0; i < grid.inputs.size(); i++) {
++            ItemStack stack = i < templates.size() ? templates.get(i).copy() : ItemStack.EMPTY;
++            if (!stack.isEmpty()) {
++                hasIngredients = true;
++                stack.setCount(stack.getCount() * batches);
++                long left = supply.merge(RecipeTreeData.ingredientKey(stack), -(long) stack.getCount(), Long::sum);
++                if (left < 0) return null;
++            }
++            Slot slot = grid.inputs.get(i);
++            if (!slot.getItem().isEmpty() && !ItemStack.matches(slot.getItem(), stack) && !slot.mayPickup(player)) return null;
++            expected.add(stack);
++        }
++        return hasIngredients ? new Plan(grid, expected, inventory, batches) : null;
++    }
++
++    private static void addSupply(Map<String, Long> supply, Slot slot) {
++        ItemStack stack = slot.getItem();
++        if (!stack.isEmpty()) supply.merge(RecipeTreeData.ingredientKey(stack), (long) stack.getCount(), Long::sum);
++    }
++
++    record Plan(Grid grid, List<ItemStack> expected, List<Slot> inventory, int batches) {
++        boolean fill(Player player) {
++            Minecraft minecraft = Minecraft.getInstance();
++            if (minecraft.gameMode == null || !grid.menu.getCarried().isEmpty()) return false;
++            for (int i = 0; i < expected.size(); i++) {
++                Slot target = grid.inputs.get(i);
++                if (target.hasItem() && !ItemStack.matches(target.getItem(), expected.get(i))) {
++                    click(minecraft, player, target, 0, ClickType.QUICK_MOVE);
++                    if (target.hasItem()) return false;
++                }
++            }
++            for (int i = 0; i < expected.size(); i++) {
++                ItemStack wanted = expected.get(i);
++                Slot target = grid.inputs.get(i);
++                if (ItemStack.matches(target.getItem(), wanted)) continue;
++
++                String key = RecipeTreeData.ingredientKey(wanted);
++                for (Slot source : inventory) {
++                    int remaining = wanted.getCount() - target.getItem().getCount();
++                    if (remaining <= 0) break;
++                    if (!source.hasItem() || !RecipeTreeData.ingredientKey(source.getItem()).equals(key)) continue;
++                    click(minecraft, player, source, 0, ClickType.PICKUP);
++                    int carried = grid.menu.getCarried().getCount();
++                    if (carried == 0) return false;
++                    if (carried <= remaining) {
++                        click(minecraft, player, target, 0, ClickType.PICKUP);
++                    } else {
++                        for (int count = 0; count < remaining; count++) {
++                            click(minecraft, player, target, 1, ClickType.PICKUP);
++                        }
++                    }
++                    if (!grid.menu.getCarried().isEmpty()) click(minecraft, player, source, 0, ClickType.PICKUP);
++                    if (!grid.menu.getCarried().isEmpty()) return false;
++                }
++                if (!ItemStack.matches(target.getItem(), wanted)) return false;
++            }
++            return true;
++        }
++
++        private void click(Minecraft minecraft, Player player, Slot slot, int button, ClickType type) {
++            minecraft.gameMode.handleInventoryMouseClick(grid.menu.containerId, slot.index, button, type, player);
++        }
++    }
++}
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/StorageNetworkIntegration.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/StorageNetworkIntegration.java
+index 2cef861..55240c4 100644
+--- a/src/main/java/com/lingmu0/JeiPlusPlusMod/client/StorageNetworkIntegration.java
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/client/StorageNetworkIntegration.java
+@@ -65,6 +65,26 @@ final class StorageNetworkIntegration {
+     private StorageNetworkIntegration() {
+     }
+ 
++    /** Slots representing network entries, ghost inputs or crafting previews are not extra stock. */
++    static boolean isVirtualOrResultSlot(Slot slot) {
++        if (slot == null || slot instanceof net.minecraft.world.inventory.ResultSlot) {
++            return true;
++        }
++        for (Class<?> type = slot.getClass(); type != null; type = type.getSuperclass()) {
++            String name = type.getName();
++            if (name.equals("appeng.menu.slot.CraftingTermSlot")
++                || name.equals("appeng.menu.slot.FakeSlot")
++                || name.equals("appeng.client.gui.me.common.RepoSlot")
++                || name.equals("appeng.client.gui.me.common.ClientReadOnlySlot")
++                || name.equals("com.refinedmods.refinedstorage.container.slot.filter.FilterSlot")
++                || name.equals(BBD_NETWORK_SLOT)
++                || (name.contains("beyonddimensions") && name.contains("StackTypedSlot"))) {
++                return true;
++            }
++        }
++        return false;
++    }
++
+     static List<StoredStack> storedStacks() {
+         Object menu = Ae2StorageIntegration.activeMenu();
+         long now = System.nanoTime();
+@@ -2131,7 +2151,7 @@ final class StorageNetworkIntegration {
+         private final long amount;
+ 
+         private StoredStack(ItemStack stack, long amount) {
+-            this.stack = stack.copy();
++            this.stack = FluidRecipeCompat.copyWithDisplay(stack);
+             this.stack.setCount(1);
+             this.key = RecipeTreeData.ingredientKey(this.stack);
+             this.amount = amount;
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/mixin/AbstractContainerScreenMixin.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/mixin/AbstractContainerScreenMixin.java
+index 9428788..c9778aa 100644
+--- a/src/main/java/com/lingmu0/JeiPlusPlusMod/mixin/AbstractContainerScreenMixin.java
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/mixin/AbstractContainerScreenMixin.java
+@@ -56,22 +56,7 @@ public abstract class AbstractContainerScreenMixin {
+                 && !(slot.container instanceof Inventory)) {
+             return;
+         }
+-        boolean finalProduct = RecipeTreeFavorites.isFinalProduct(slot.getItem());
+-        boolean intermediate = RecipeTreeFavorites.isIntermediate(slot.getItem());
+-        boolean required = RecipeTreeFavorites.isRequired(slot.getItem());
+-        if (!finalProduct && !intermediate && !required) {
+-            return;
+-        }
+-        int fill = finalProduct ? 0x4433CC66 : (intermediate ? 0x44FF2222 : 0x3300BBFF);
+-        int border = finalProduct ? 0xDD66FF88 : (intermediate ? 0xDDFF5555 : 0xCC55DDFF);
+-        graphics.pose().pushPose();
+-        graphics.pose().translate(0, 0, 300);
+-        graphics.fill(slot.x, slot.y, slot.x + 16, slot.y + 16, fill);
+-        graphics.fill(slot.x, slot.y, slot.x + 16, slot.y + 1, border);
+-        graphics.fill(slot.x, slot.y + 15, slot.x + 16, slot.y + 16, border);
+-        graphics.fill(slot.x, slot.y, slot.x + 1, slot.y + 16, border);
+-        graphics.fill(slot.x + 15, slot.y, slot.x + 16, slot.y + 16, border);
+-        graphics.pose().popPose();
++        RecipeTreeFavorites.renderSlotHighlight(graphics, slot);
+     }
+ 
+     /**
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/mixin/ClientContainerCloseMixin.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/mixin/ClientContainerCloseMixin.java
+new file mode 100644
+index 0000000..6f98ccb
+--- /dev/null
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/mixin/ClientContainerCloseMixin.java
+@@ -0,0 +1,16 @@
++package com.lingmu0.JeiPlusPlusMod.mixin;
++
++import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeTransfer;
++import net.minecraft.client.player.LocalPlayer;
++import org.spongepowered.asm.mixin.Mixin;
++import org.spongepowered.asm.mixin.injection.At;
++import org.spongepowered.asm.mixin.injection.Inject;
++import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
++
++@Mixin(LocalPlayer.class)
++public abstract class ClientContainerCloseMixin {
++    @Inject(method = "closeContainer", at = @At("HEAD"))
++    private void jeiPlusPlus$restoreCraftingUpgradeSettings(CallbackInfo ci) {
++        RecipeTreeTransfer.beforeContainerClose(((LocalPlayer) (Object) this).containerMenu);
++    }
++}
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/mixin/ClientContainerSyncMixin.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/mixin/ClientContainerSyncMixin.java
+new file mode 100644
+index 0000000..b2d930b
+--- /dev/null
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/mixin/ClientContainerSyncMixin.java
+@@ -0,0 +1,23 @@
++package com.lingmu0.JeiPlusPlusMod.mixin;
++
++import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeTransfer;
++import net.minecraft.client.multiplayer.ClientPacketListener;
++import net.minecraft.network.protocol.game.ClientboundContainerSetContentPacket;
++import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
++import org.spongepowered.asm.mixin.Mixin;
++import org.spongepowered.asm.mixin.injection.At;
++import org.spongepowered.asm.mixin.injection.Inject;
++import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
++
++@Mixin(ClientPacketListener.class)
++public abstract class ClientContainerSyncMixin {
++    @Inject(method = "handleContainerSetSlot", at = @At("TAIL"))
++    private void jeiPlusPlus$confirmUpgradeSlot(ClientboundContainerSetSlotPacket packet, CallbackInfo ci) {
++        RecipeTreeTransfer.updateSophisticatedSlot(packet.getContainerId(), packet.getSlot(), packet.getItem());
++    }
++
++    @Inject(method = "handleContainerContent", at = @At("TAIL"))
++    private void jeiPlusPlus$confirmUpgradeContents(ClientboundContainerSetContentPacket packet, CallbackInfo ci) {
++        RecipeTreeTransfer.updateSophisticatedContents(packet.getContainerId());
++    }
++}
+diff --git a/src/main/java/com/lingmu0/JeiPlusPlusMod/mixin/SophisticatedStorageScreenMixin.java b/src/main/java/com/lingmu0/JeiPlusPlusMod/mixin/SophisticatedStorageScreenMixin.java
+new file mode 100644
+index 0000000..75303f3
+--- /dev/null
++++ b/src/main/java/com/lingmu0/JeiPlusPlusMod/mixin/SophisticatedStorageScreenMixin.java
+@@ -0,0 +1,29 @@
++package com.lingmu0.JeiPlusPlusMod.mixin;
++
++import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeFavorites;
++import com.lingmu0.JeiPlusPlusMod.client.RecipeTreeTransfer;
++import net.minecraft.client.gui.GuiGraphics;
++import net.minecraft.client.gui.screens.Screen;
++import net.minecraft.world.inventory.Slot;
++import org.spongepowered.asm.mixin.Mixin;
++import org.spongepowered.asm.mixin.Pseudo;
++import org.spongepowered.asm.mixin.injection.At;
++import org.spongepowered.asm.mixin.injection.Inject;
++import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
++
++@Pseudo
++@Mixin(targets = "net.p3pp3rf1y.sophisticatedcore.client.gui.StorageScreenBase", remap = false)
++public abstract class SophisticatedStorageScreenMixin {
++    @Inject(method = {"render", "m_88315_"},
++        at = @At("HEAD"), remap = false)
++    private void jeiPlusPlus$tickCrafting(GuiGraphics graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
++        RecipeTreeFavorites.refreshThrottled();
++        RecipeTreeTransfer.tick((Screen) (Object) this);
++    }
++
++    @Inject(method = {"renderSlot", "m_280092_"},
++        at = @At("TAIL"), remap = false)
++    private void jeiPlusPlus$highlightSlot(GuiGraphics graphics, Slot slot, CallbackInfo ci) {
++        RecipeTreeFavorites.renderSlotHighlight(graphics, slot);
++    }
++}
+diff --git a/src/main/resources/jei_plus_plus.mixins.json b/src/main/resources/jei_plus_plus.mixins.json
+index ee88354..d1eca64 100644
+--- a/src/main/resources/jei_plus_plus.mixins.json
++++ b/src/main/resources/jei_plus_plus.mixins.json
+@@ -38,7 +38,10 @@
+     "BetterBeyondSidebarRendererMixin",
+     "IntegratedTerminalStorageMixin",
+     "IntegratedTerminalMenuMixin",
+-    "AbstractContainerScreenMixin"
++    "AbstractContainerScreenMixin",
++    "SophisticatedStorageScreenMixin",
++    "ClientContainerCloseMixin",
++    "ClientContainerSyncMixin"
+   ],
+   "injectors": {
+     "defaultRequire": 1
+diff --git a/src/test/java/com/lingmu0/JeiPlusPlusMod/client/JeiInputSceneTest.java b/src/test/java/com/lingmu0/JeiPlusPlusMod/client/JeiInputSceneTest.java
+index 0baf01f..7da1e19 100644
+--- a/src/test/java/com/lingmu0/JeiPlusPlusMod/client/JeiInputSceneTest.java
++++ b/src/test/java/com/lingmu0/JeiPlusPlusMod/client/JeiInputSceneTest.java
+@@ -15,8 +15,8 @@ public final class JeiInputSceneTest {
+         Hover ingredients = new Hover(rect(120, 40, 100, 120), rect(120, 20, 100, 18));
+         Hover bookmarks = new Hover(rect(0, 160, 100, 20), rect(100, 160, 20, 20));
+         Object recipe = area(areaApi, mouseApi, inputApi, "recipes", recipes, controls);
+-        Object ingredient = area(areaApi, mouseApi, inputApi, "ingredients", ingredients, controls);
+-        Object bookmark = area(areaApi, mouseApi, inputApi, "bookmarks", bookmarks, controls);
++        Object ingredient = wrapArea(areaApi, area(areaApi, mouseApi, inputApi, "ingredients", ingredients, controls));
++        Object bookmark = wrapArea(areaApi, area(areaApi, mouseApi, inputApi, "bookmarks", bookmarks, controls));
+         List<Object> areas = List.of(recipe, ingredient, bookmark);
+         Object scene = scene(sceneApi, areaApi, areas);
+ 
+@@ -110,6 +110,21 @@ public final class JeiInputSceneTest {
+     private static ImmutableRect2i rect(int x, int y, int w, int h) { return new ImmutableRect2i(x, y, w, h); }
+     private static void check(boolean value, String message) { if (!value) throw new AssertionError(message); }
+ 
++    private static Object wrapArea(Class<?> type, Object area) throws Exception {
++        Object wrapped = JeiInputAreaCompat.wrapControls((mezz.jei.gui.input.InputArea) area, original ->
++                (mezz.jei.common.input.IInputTarget) JeiReflectionCompat.proxyInputHandler(() -> original));
++        for (RecordComponent component : type.getRecordComponents()) {
++            Object previous = component.getAccessor().invoke(area);
++            Object current = component.getAccessor().invoke(wrapped);
++            if (component.getName().equals("controls")) {
++                check(previous != current, "install wrapped controls");
++            } else {
++                check(Objects.equals(previous, current), "preserve input area component " + component.getName());
++            }
++        }
++        return wrapped;
++    }
++
+     private static Object area(Class<?> areaApi, Class<?> mouseApi, Class<?> inputApi,
+                                String name, Hover hover, Object controls) throws Exception {
+         Object source = Proxy.newProxyInstance(JeiInputSceneTest.class.getClassLoader(),

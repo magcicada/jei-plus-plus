@@ -139,8 +139,14 @@ public final class Ae2PatternServer {
         Object[] inputs = (Object[]) java.lang.reflect.Array.newInstance(generic, 9);
         Object[] outputs = (Object[]) java.lang.reflect.Array.newInstance(generic, 3);
         for (int i = 0; i < Math.min(9, plan.inputs().size()); i++) {
-            if (!plan.inputs().get(i).isEmpty())
-                inputs[i] = fromItem.invoke(null, plan.inputs().get(i));
+            ItemStack input = plan.inputs().get(i);
+            if (input.isEmpty()) continue;
+            if (Ae2ChemicalCompat.isWrapped(input)) {
+                inputs[i] = Ae2ChemicalCompat.unwrapInput(input);
+                if (inputs[i] == null) return null;
+            } else {
+                inputs[i] = fromItem.invoke(null, input);
+            }
         }
         for (int i = 0; i < Math.min(3, plan.outputs().size()); i++) {
             if (!plan.outputs().get(i).isEmpty())

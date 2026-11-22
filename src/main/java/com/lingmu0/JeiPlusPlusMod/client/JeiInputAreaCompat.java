@@ -1,9 +1,12 @@
 package com.lingmu0.JeiPlusPlusMod.client;
 
+import mezz.jei.common.input.IInputTarget;
 import mezz.jei.common.util.ImmutableRect2i;
+import mezz.jei.gui.input.InputArea;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 /** Bridges JEI's input-scene hit testing without replacing its controls or shortcuts. */
 public final class JeiInputAreaCompat {
@@ -21,6 +24,15 @@ public final class JeiInputAreaCompat {
     };
 
     private JeiInputAreaCompat() {
+    }
+
+    public static InputArea wrapControls(InputArea area, UnaryOperator<IInputTarget> wrapper) {
+        IInputTarget wrapped = wrapper.apply(area.controls());
+        if (wrapped == area.controls()) {
+            return area;
+        }
+        return new InputArea(area.name(), area.area(), area.blocksUnhandledMouseInput(), wrapped,
+                area.commands(), area.dragSources(), area.apiDragHandler(), area.keyboardNavigation());
     }
 
     public static Optional<?> selectTarget(List<?> areas, Optional<?> nativeTarget, double x, double y) {

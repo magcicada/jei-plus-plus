@@ -5,63 +5,50 @@ import mezz.jei.api.ingredients.IIngredientRenderer;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
-import net.minecraft.world.inventory.tooltip.TooltipComponent;
+import mezz.jei.common.gui.JeiTooltip;
+import mezz.jei.common.platform.Services;
+import mezz.jei.common.util.SafeIngredientUtil;
+import mezz.jei.library.gui.ingredients.TagContentTooltipComponent;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-/** Runtime bridge for JEI's changing tag-content tooltip component. */
+/** Builds JEI tooltips for the tree's item, fluid and chemical ingredients. */
 final class JeiTooltipCompat {
-    private static final String TAG_CONTENT_COMPONENT = "mezz.jei.library.gui.ingredients.TagContentTooltipComponent";
-
     private JeiTooltipCompat() {
     }
 
-    static Optional<TooltipComponent> createTagContent(
-            IJeiRuntime runtime,
-            IIngredientRenderer<ItemStack> renderer,
-            List<ItemStack> alternatives) {
-        if (runtime == null || renderer == null || alternatives == null || alternatives.isEmpty()) {
-            return Optional.empty();
+    static <T> void addIngredientTooltip(JeiTooltip tooltip, IIngredientManager manager, ITypedIngredient<T> ingredient) {
+        IIngredientRenderer<T> renderer = manager.getIngredientRenderer(ingredient.getType());
+        SafeIngredientUtil.getRichTooltip(tooltip, manager, renderer, ingredient);
+    }
+
+    static void addAlternatives(JeiTooltip tooltip, IJeiRuntime runtime, List<ItemStack> alternatives) {
+        if (runtime == null || alternatives.size() < 2) return;
+
+        IIngredientManager manager = runtime.getIngredientManager();
+        List<ItemStack> displayStacks = new ArrayList<>();
+        List<ITypedIngredient<?>> ingredients = new ArrayList<>();
+        for (ItemStack stack : alternatives) {
+            if (stack == null || stack.isEmpty()) continue;
+            ItemStack display = FluidRecipeCompat.copyWithDisplay(stack);
+            display.setCount(1);
+            FluidRecipeCompat.toTyped(manager, display).ifPresent(typed -> {
+                displayStacks.add(display);
+                ingredients.add(typed);
+            });
         }
-        try {
-            IIngredientManager manager = runtime.getIngredientManager();
-            Class<?> componentType = Class.forName(TAG_CONTENT_COMPONENT);
-            List<ITypedIngredient<?>> typed = new ArrayList<>();
-            for (ItemStack stack : alternatives) {
-                if (stack == null || stack.isEmpty()) {
-                    continue;
-                }
-                manager.createTypedIngredient(VanillaTypes.ITEM_STACK, stack)
-                        .ifPresent(value -> typed.add((ITypedIngredient<?>) value));
-            }
-            for (Constructor<?> constructor : componentType.getDeclaredConstructors()) {
-                Class<?>[] parameters = constructor.getParameterTypes();
-                if (parameters.length != 2 || parameters[1] != List.class) {
-                    continue;
-                }
-                Object first;
-                List<?> values;
-                if (parameters[0].isAssignableFrom(manager.getClass())) {
-                    // Newer JEI versions render typed ingredients through the manager.
-                    first = manager;
-                    values = typed;
-                } else if (parameters[0].isAssignableFrom(renderer.getClass())) {
-                    // Older JEI versions render raw values through the renderer.
-                    first = renderer;
-                    values = alternatives;
-                } else {
-                    continue;
-                }
-                constructor.trySetAccessible();
-                return Optional.of((TooltipComponent) constructor.newInstance(first, values));
-            }
-        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
-            // The extra tooltip is optional; the normal tag line remains.
+        if (ingredients.size() < 2) return;
+
+        if (ingredients.stream().allMatch(ingredient -> ingredient.getType() == VanillaTypes.ITEM_STACK)) {
+            manager.getIngredientHelper(VanillaTypes.ITEM_STACK).getTagKeyEquivalent(displayStacks).ifPresent(tag -> {
+                tooltip.add(Component.translatable("jei.tooltip.recipe.tag", "").withStyle(ChatFormatting.GRAY));
+                tooltip.add(Services.PLATFORM.getRenderHelper().getName(tag).copy().withStyle(ChatFormatting.GRAY));
+            });
         }
-        return Optional.empty();
+        tooltip.add(new TagContentTooltipComponent(manager, ingredients));
     }
 }

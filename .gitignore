@@ -25,3 +25,6 @@ run
 
 # Local source/cache material used while developing the addon
 .tmp-jei-*
+
+# Others
+.patch

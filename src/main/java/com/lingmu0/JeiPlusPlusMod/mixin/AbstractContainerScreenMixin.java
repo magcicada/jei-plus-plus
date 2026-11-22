@@ -56,22 +56,7 @@ public abstract class AbstractContainerScreenMixin {
                 && !(slot.container instanceof Inventory)) {
             return;
         }
-        boolean finalProduct = RecipeTreeFavorites.isFinalProduct(slot.getItem());
-        boolean intermediate = RecipeTreeFavorites.isIntermediate(slot.getItem());
-        boolean required = RecipeTreeFavorites.isRequired(slot.getItem());
-        if (!finalProduct && !intermediate && !required) {
-            return;
-        }
-        int fill = finalProduct ? 0x4433CC66 : (intermediate ? 0x44FF2222 : 0x3300BBFF);
-        int border = finalProduct ? 0xDD66FF88 : (intermediate ? 0xDDFF5555 : 0xCC55DDFF);
-        graphics.pose().pushPose();
-        graphics.pose().translate(0, 0, 300);
-        graphics.fill(slot.x, slot.y, slot.x + 16, slot.y + 16, fill);
-        graphics.fill(slot.x, slot.y, slot.x + 16, slot.y + 1, border);
-        graphics.fill(slot.x, slot.y + 15, slot.x + 16, slot.y + 16, border);
-        graphics.fill(slot.x, slot.y, slot.x + 1, slot.y + 16, border);
-        graphics.fill(slot.x + 15, slot.y, slot.x + 16, slot.y + 16, border);
-        graphics.pose().popPose();
+        RecipeTreeFavorites.renderSlotHighlight(graphics, slot);
     }
 
     /**

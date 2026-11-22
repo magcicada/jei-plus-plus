@@ -65,6 +65,26 @@ final class StorageNetworkIntegration {
     private StorageNetworkIntegration() {
     }
 
+    /** Slots representing network entries, ghost inputs or crafting previews are not extra stock. */
+    static boolean isVirtualOrResultSlot(Slot slot) {
+        if (slot == null || slot instanceof net.minecraft.world.inventory.ResultSlot) {
+            return true;
+        }
+        for (Class<?> type = slot.getClass(); type != null; type = type.getSuperclass()) {
+            String name = type.getName();
+            if (name.equals("appeng.menu.slot.CraftingTermSlot")
+                || name.equals("appeng.menu.slot.FakeSlot")
+                || name.equals("appeng.client.gui.me.common.RepoSlot")
+                || name.equals("appeng.client.gui.me.common.ClientReadOnlySlot")
+                || name.equals("com.refinedmods.refinedstorage.container.slot.filter.FilterSlot")
+                || name.equals(BBD_NETWORK_SLOT)
+                || (name.contains("beyonddimensions") && name.contains("StackTypedSlot"))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     static List<StoredStack> storedStacks() {
         Object menu = Ae2StorageIntegration.activeMenu();
         long now = System.nanoTime();
@@ -2131,7 +2151,7 @@ final class StorageNetworkIntegration {
         private final long amount;
 
         private StoredStack(ItemStack stack, long amount) {
-            this.stack = stack.copy();
+            this.stack = FluidRecipeCompat.copyWithDisplay(stack);
             this.stack.setCount(1);
             this.key = RecipeTreeData.ingredientKey(this.stack);
             this.amount = amount;

@@ -38,7 +38,10 @@
     "BetterBeyondSidebarRendererMixin",
     "IntegratedTerminalStorageMixin",
     "IntegratedTerminalMenuMixin",
-    "AbstractContainerScreenMixin"
+    "AbstractContainerScreenMixin",
+    "SophisticatedStorageScreenMixin",
+    "ClientContainerCloseMixin",
+    "ClientContainerSyncMixin"
   ],
   "injectors": {
     "defaultRequire": 1
